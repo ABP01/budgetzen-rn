@@ -1,0 +1,86 @@
+workflows:
+  budgetzen-workflow:
+    name: BudgetZen React Native App
+    labels:
+      - React Native
+      - Expo
+      - BudgetZen
+    instance_type: mac_mini_m2
+    max_build_duration: 45
+    inputs:
+      name:
+        description: Nom du build
+        default: BudgetZen
+    environment:
+      groups:
+        - budgetzen_env
+      vars:
+        EXPO_PUBLIC_API_URL: "https://api.budgetzen.com"
+        EXPO_PUBLIC_ENV: "production"
+        NODE_VERSION: "20"
+      node: $NODE_VERSION
+      xcode: latest
+    cache:
+      cache_paths:
+        - ~/.yarn
+        - ~/.expo
+        - ~/.npm
+        - node_modules
+        - .expo
+        - ios/Pods
+    triggering:
+      events:
+        - push
+        - pull_request
+      branch_patterns:
+        - pattern: 'dev'
+          include: true
+          source: true
+        - pattern: 'main'
+          include: true
+          source: true
+        - pattern: 'release/*'
+          include: true
+          source: true
+      cancel_previous_builds: true
+    scripts:
+      - name: "Installation des dépendances"
+        script: |
+          echo "Démarrage du build pour ${{ inputs.name }}"
+          yarn install --frozen-lockfile
+      - name: "Vérification du code"
+        script: |
+          echo "Vérification du code avec ESLint"
+          yarn lint
+      - name: "Vérification des dépendances Expo"
+        script: |
+          echo "Vérification des dépendances Expo"
+          npx expo install --fix
+      - name: "Build Android"
+        script: |
+          echo "Build pour Android"
+          npx expo export --platform android --output-dir build/android
+      - name: "Build iOS"
+        script: |
+          echo "Build pour iOS"
+          npx expo export --platform ios --output-dir build/ios
+      - name: "Build Web"
+        script: |
+          echo "Build pour Web"
+          npx expo export --platform web --output-dir build/web
+    artifacts:
+      - build/android/**/*
+      - build/ios/**/*
+      - build/web/**/*
+    publishing:
+      email:
+        recipients:
+          - dev@budgetzen.com
+        notify:
+          success: true
+          failure: true
+      scripts:
+        - name: "Notification de fin de build"
+          script: |
+            echo "Build terminé avec succès pour BudgetZen"
+            echo "Applications prêtes pour le déploiement"
