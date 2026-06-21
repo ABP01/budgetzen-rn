@@ -10,22 +10,32 @@ import * as Icons from "phosphor-react-native";
 import React, { useRef, useState } from "react";
 import { Alert, Pressable, StyleSheet, View } from "react-native";
 
+import { useAuth } from "@/context/AuthContext";
+
 const Register = () => {
   const router = useRouter();
+  const { register } = useAuth();
   const emailRef = useRef<string>("");
   const passwordRef = useRef<string>("");
   const nameRef = useRef<string>("");
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async () => {
-    if(!emailRef.current || !passwordRef.current || !nameRef.current) {
-        Alert.alert("Register", "Please fill all the fields");
-        return;
+    if (!emailRef.current || !passwordRef.current || !nameRef.current) {
+      Alert.alert("Inscription", "Veuillez remplir tous les champs");
+      return;
     }
-    console.log("email", emailRef.current); 
-    console.log("password", passwordRef.current);
-    console.log("name", nameRef.current);
-    console.log("Good to go");
+    setIsLoading(true);
+    try {
+      const res = await register(emailRef.current, nameRef.current);
+      if (!res.success) {
+        Alert.alert("Inscription", res.msg || "Une erreur est survenue");
+      }
+    } catch (err) {
+      Alert.alert("Inscription", "Impossible de créer le compte");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -35,22 +45,22 @@ const Register = () => {
 
         <View style={{ gap: 5, marginTop: spacingY._20 }}>
           <Typo fontWeight={"800"} size={30}>
-            Let&apos;s
+            Créer un
           </Typo>
           <Typo fontWeight={"800"} size={30}>
-            Get Started
+            Nouveau Compte
           </Typo>
         </View>
 
         {/* form */}
         <View style={styles.form}>
           <Typo size={16} color={colors.textLight}>
-            Sign up now to track all your expenses
+            Inscrivez-vous pour gérer vos finances avec Pursio
           </Typo>
           {/* Input */}
           <Input
-            placeholder="Enter your name"
-            onChangeText={(value) => (emailRef.current = value)}
+            placeholder="Nom complet"
+            onChangeText={(value) => (nameRef.current = value)}
             icon={
               <Icons.User
                 size={verticalScale(26)}
@@ -60,7 +70,7 @@ const Register = () => {
             }
           />
           <Input
-            placeholder="Enter your email"
+            placeholder="Adresse e-mail"
             onChangeText={(value) => (emailRef.current = value)}
             icon={
               <Icons.At
@@ -71,7 +81,8 @@ const Register = () => {
             }
           />
           <Input
-            placeholder="Enter your password"
+            placeholder="Mot de passe"
+            secureTextEntry
             onChangeText={(value) => (passwordRef.current = value)}
             icon={
               <Icons.Lock
@@ -83,17 +94,17 @@ const Register = () => {
           />
 
           <Button loading={isLoading} onPress={handleSubmit}>
-            <Typo color={colors.white} fontWeight={"600"}>
-              Sign up
+            <Typo color={colors.neutral900} fontWeight={"700"}>
+              {"S'inscrire"}
             </Typo>
           </Button>
         </View>
         {/* footer */}
         <View style={styles.footer}>
-          <Typo size={15}>{"Already have an account?"}</Typo>
+          <Typo size={15}>Déjà membre ?</Typo>
           <Pressable onPress={() => {router.navigate("/(auth)/login" as any);}}>
             <Typo size={15} fontWeight={"700"} color={colors.primary}>
-              Login
+              Se connecter
             </Typo>
           </Pressable>
         </View>

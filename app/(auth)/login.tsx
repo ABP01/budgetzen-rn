@@ -10,20 +10,31 @@ import * as Icons from "phosphor-react-native";
 import React, { useRef, useState } from "react";
 import { Alert, Pressable, StyleSheet, View } from "react-native";
 
+import { useAuth } from "@/context/AuthContext";
+
 const Login = () => {
   const router = useRouter();
+  const { login } = useAuth();
   const emailRef = useRef<string>("");
   const passwordRef = useRef<string>("");
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async () => {
-    if(!emailRef.current || !passwordRef.current) {
-        Alert.alert("Login", "Please fill all the fields");
-        return;
+    if (!emailRef.current || !passwordRef.current) {
+      Alert.alert("Connexion", "Veuillez remplir tous les champs");
+      return;
     }
-    console.log("email", emailRef.current); 
-    console.log("password", passwordRef.current);
-    console.log("Good to go");
+    setIsLoading(true);
+    try {
+      const res = await login(emailRef.current);
+      if (!res.success) {
+        Alert.alert("Connexion", res.msg || "Une erreur est survenue");
+      }
+    } catch (err) {
+      Alert.alert("Connexion", "Impossible de se connecter");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -33,21 +44,21 @@ const Login = () => {
 
         <View style={{ gap: 5, marginTop: spacingY._20 }}>
           <Typo fontWeight={"800"} size={30}>
-            Hey,
+            Heureux de
           </Typo>
           <Typo fontWeight={"800"} size={30}>
-            Welcome Back!
+            vous revoir !
           </Typo>
         </View>
 
         {/* form */}
         <View style={styles.form}>
           <Typo size={16} color={colors.textLight}>
-            Login now to track all your expenses
+            Connectez-vous pour suivre votre budget des 3 cercles
           </Typo>
           {/* Input */}
           <Input
-            placeholder="Enter your email"
+            placeholder="Adresse e-mail"
             onChangeText={(value) => (emailRef.current = value)}
             icon={
               <Icons.At
@@ -58,7 +69,8 @@ const Login = () => {
             }
           />
           <Input
-            placeholder="Enter your password"
+            placeholder="Mot de passe"
+            secureTextEntry
             onChangeText={(value) => (passwordRef.current = value)}
             icon={
               <Icons.Lock
@@ -68,20 +80,20 @@ const Login = () => {
               />
             }
           />
-          <Typo style={{ alignSelf: "flex-end" }}>Forgot Password?</Typo>
+          <Typo style={{ alignSelf: "flex-end" }}>Mot de passe oublié ?</Typo>
 
           <Button loading={isLoading} onPress={handleSubmit}>
-            <Typo color={colors.white} fontWeight={"600"}>
-              Login
+            <Typo color={colors.neutral900} fontWeight={"700"}>
+              Se connecter
             </Typo>
           </Button>
         </View>
         {/* footer */}
         <View style={styles.footer}>
-          <Typo size={15}>{"Don't have an account?"}</Typo>
+          <Typo size={15}>Pas de compte ?</Typo>
           <Pressable onPress={() => {router.navigate("/(auth)/register" as any);}}>
             <Typo size={15} fontWeight={"700"} color={colors.primary}>
-              Sign up
+              {"S'inscrire"}
             </Typo>
           </Pressable>
         </View>

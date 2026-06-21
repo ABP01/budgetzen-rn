@@ -28,15 +28,15 @@ const Welcome = () => {
 
         {/* footer */}
         <View style={styles.footer}>
-          <Animated.View
-            entering={FadeInDown.duration(1000).springify().damping(12)}
-            style={{ alignItems: "center" }}
-          >
-              <Typo size={30} fontWeight={"800"}>
-                Always take control
+            <Animated.View
+              entering={FadeInDown.duration(1000).springify().damping(12)}
+              style={{ alignItems: "center" }}
+            >
+              <Typo size={32} fontWeight={"800"}>
+                Prenez le contrôle
               </Typo>
-              <Typo size={30} fontWeight={"800"}>
-                of your finances
+              <Typo size={32} fontWeight={"800"}>
+                de vos finances
               </Typo>
             </Animated.View>
 
@@ -45,13 +45,13 @@ const Welcome = () => {
                 .delay(100)
                 .springify()
                 .damping(12)}
-              style={{ alignItems: "center", gap: 2 }}
+              style={{ alignItems: "center", gap: 5 }}
             >
-              <Typo size={17} color={colors.textLight}>
-                Finances must be arranged to set a better
+              <Typo size={16} color={colors.textLight} style={{ textAlign: 'center' }}>
+                Gérez votre argent avec la règle des 3 cercles et
               </Typo>
-              <Typo size={17} color={colors.textLight}>
-                lifestyle in future
+              <Typo size={16} color={colors.textLight} style={{ textAlign: 'center' }}>
+                sécurisez votre coussin de précaution local en FCFA.
               </Typo>
             </Animated.View>
 
@@ -60,8 +60,8 @@ const Welcome = () => {
               style={styles.buttonContainer}
             >
               <Button onPress={() => router.push("/(auth)/register" as any)}>
-                <Typo size={18} fontWeight={"600"} color={colors.neutral900}>
-                  Get Started
+                <Typo size={18} fontWeight={"700"} color={colors.neutral900}>
+                  Commencer
                 </Typo>
               </Button>
             </Animated.View>
