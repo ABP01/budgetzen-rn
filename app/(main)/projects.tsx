@@ -9,7 +9,11 @@ import {
   TouchableWithoutFeedback,
   Keyboard,
   Image,
+  Modal,
+  Dimensions,
 } from 'react-native';
+
+const { width: screenWidth } = Dimensions.get('window');
 import { useAuth } from '@/context/AuthContext';
 import ScreenWrapper from '@/components/ScreenWrapper';
 import Typo from '@/components/Typo';
@@ -19,6 +23,7 @@ import { colors, spacingX, spacingY, radius } from '@/constants/theme';
 import { verticalScale } from '@/utils/styling';
 import { formatFCFA } from '@/utils/currency';
 import { LIcon, icons } from '@/constants/icons';
+import { LiquidGlass } from '@/components/LiquidGlass';
 
 // Beautiful placeholder covers based on project properties
 const getProjectCover = (name: string, isSystem: boolean, isPlaisir: boolean) => {
@@ -43,6 +48,8 @@ const ProjectsScreen = () => {
     projects,
     createProject,
     allocateToProject,
+    deallocateFunds,
+    deleteProject,
     emergencyCushionLimit,
     emergencyCushionAllocated,
     totalBalance,
@@ -59,6 +66,11 @@ const ProjectsScreen = () => {
   // Form states - Allocate Savings
   const [selectedProjectId, setSelectedProjectId] = useState('');
   const [allocateStr, setAllocateStr] = useState('');
+
+  // Project management states
+  const [selectedProjectForManage, setSelectedProjectForManage] = useState<any>(null);
+  const [manageModalVisible, setManageModalVisible] = useState(false);
+  const [deallocateStr, setDeallocateStr] = useState('');
 
   const targetAmount = parseInt(targetStr.replace(/\s/g, '')) || 0;
   const allocateAmount = parseInt(allocateStr.replace(/\s/g, '')) || 0;
@@ -196,7 +208,14 @@ const ProjectsScreen = () => {
                   const coverUrl = getProjectCover(item.name, isSystem, item.isPlaisir);
 
                   return (
-                    <View style={[styles.projectCard, isSystem && styles.systemCard]}>
+                    <Pressable
+                      style={[styles.projectCard, isSystem && styles.systemCard]}
+                      onPress={() => {
+                        setSelectedProjectForManage(item);
+                        setDeallocateStr('');
+                        setManageModalVisible(true);
+                      }}
+                    >
                       {/* Card Image Header */}
                       <View style={styles.cardImageContainer}>
                         <Image source={{ uri: coverUrl }} style={styles.cardImage} />
@@ -271,7 +290,7 @@ const ProjectsScreen = () => {
                           </Typo>
                         </View>
                       </View>
-                    </View>
+                    </Pressable>
                   );
                 }}
               />
@@ -475,6 +494,131 @@ const ProjectsScreen = () => {
             )}
           </View>
         </ScreenWrapper>
+
+        {/* Manage Project Modal */}
+        <Modal
+          visible={manageModalVisible}
+          animationType="slide"
+          transparent={true}
+          onRequestClose={() => setManageModalVisible(false)}
+        >
+          <View style={styles.modalBackground}>
+            <LiquidGlass intensity={40} style={styles.modalContent} tintColor="rgba(10, 10, 10, 0.95)">
+              <View style={styles.modalHeader}>
+                <Typo size={20} fontWeight="800" style={{ fontFamily: 'Outfit-Bold' }}>
+                  Gérer le projet
+                </Typo>
+                <Pressable onPress={() => setManageModalVisible(false)} style={styles.closeBtn}>
+                  <Typo size={24} fontWeight="800" color={colors.neutral400}>×</Typo>
+                </Pressable>
+              </View>
+
+              {selectedProjectForManage && (
+                <ScrollView contentContainerStyle={{ gap: 16, paddingVertical: 10 }} showsVerticalScrollIndicator={false}>
+                  {/* Project Info Summary */}
+                  <View style={{ gap: 6 }}>
+                    <Typo size={18} fontWeight="800" color={colors.primary}>
+                      {selectedProjectForManage.name}
+                    </Typo>
+                    <Typo size={12} color={colors.textLight}>
+                      Cible : {formatFCFA(selectedProjectForManage.targetAmount)} | Alloué : {formatFCFA(selectedProjectForManage.allocatedAmount)}
+                    </Typo>
+                    
+                    {/* Progress bar */}
+                    <View style={styles.progressRow}>
+                      <View style={styles.progressBg}>
+                        <View
+                          style={[
+                            styles.progressFill,
+                            {
+                              width: `${Math.min(100, (selectedProjectForManage.allocatedAmount / selectedProjectForManage.targetAmount) * 100)}%`,
+                              backgroundColor: selectedProjectForManage.id === 'emergency-cushion' ? colors.primary : selectedProjectForManage.isPlaisir ? '#0ea5e9' : colors.primary,
+                            },
+                          ]}
+                        />
+                      </View>
+                      <Typo size={12} fontWeight="800" color={colors.white}>
+                        {Math.round((selectedProjectForManage.allocatedAmount / selectedProjectForManage.targetAmount) * 100)}%
+                      </Typo>
+                    </View>
+                  </View>
+
+                  {/* Deallocate funds input group */}
+                  {selectedProjectForManage.allocatedAmount > 0 && (
+                    <View style={styles.inputGroup}>
+                      <Typo size={13} fontWeight="600" color={colors.textLighter}>
+                        Retirer de l'épargne allouée (FCFA)
+                      </Typo>
+                      <Input
+                        placeholder="Ex: 10 000"
+                        keyboardType="numeric"
+                        value={deallocateStr ? parseInt(deallocateStr).toLocaleString('fr-FR').replace(/,/g, ' ') : ''}
+                        onChangeText={(text) => setDeallocateStr(text.replace(/[^0-9]/g, ''))}
+                        icon={<LIcon icon={icons.calculator} size={18} color={colors.rose} />}
+                      />
+                      <Pressable
+                        style={[styles.modalSubmitBtn, { backgroundColor: colors.rose, borderColor: colors.rose, marginTop: 8 }]}
+                        onPress={async () => {
+                          const amount = parseInt(deallocateStr) || 0;
+                          if (amount <= 0) {
+                            Alert.alert('Erreur', 'Veuillez saisir un montant valide.');
+                            return;
+                          }
+                          const res = await deallocateFunds(selectedProjectForManage.id, amount);
+                          if (res.success) {
+                            Alert.alert('Succès', `${formatFCFA(amount)} retirés avec succès.`);
+                            setDeallocateStr('');
+                            setManageModalVisible(false);
+                          } else {
+                            Alert.alert('Erreur', res.error || 'Impossible de retirer les fonds.');
+                          }
+                        }}
+                      >
+                        <Typo size={14} color={colors.neutral900} fontWeight="800">
+                          RETIRER LES FONDS
+                        </Typo>
+                      </Pressable>
+                    </View>
+                  )}
+
+                  {/* Delete button (only if not emergency cushion system project) */}
+                  {selectedProjectForManage.id !== 'emergency-cushion' && (
+                    <View style={{ marginTop: 10 }}>
+                      <Pressable
+                        style={[styles.modalSubmitBtn, { backgroundColor: '#ef4444', borderColor: '#ef4444' }]}
+                        onPress={() => {
+                          Alert.alert(
+                            'Supprimer le projet',
+                            `Êtes-vous sûr de vouloir supprimer "${selectedProjectForManage.name}" ? Les ${formatFCFA(selectedProjectForManage.allocatedAmount)} alloués retourneront dans votre solde libre disponible.`,
+                            [
+                              { text: 'Annuler', style: 'cancel' },
+                              {
+                                text: 'Supprimer',
+                                style: 'destructive',
+                                onPress: async () => {
+                                  await deleteProject(selectedProjectForManage.id);
+                                  setManageModalVisible(false);
+                                  Alert.alert('Succès', 'Le projet a été supprimé.');
+                                },
+                              },
+                            ]
+                          );
+                        }}
+                      >
+                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                          <LIcon icon={icons.warning} size={16} color={colors.white} />
+                          <Typo size={14} color={colors.white} fontWeight="800" style={{ marginLeft: 6 }}>
+                            SUPPRIMER LE PROJET
+                          </Typo>
+                        </View>
+                      </Pressable>
+                    </View>
+                  )}
+                </ScrollView>
+              )}
+            </LiquidGlass>
+          </View>
+        </Modal>
       </View>
     </TouchableWithoutFeedback>
   );
@@ -671,5 +815,36 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(239, 68, 68, 0.3)',
     padding: 12,
     borderRadius: radius._12,
+  },
+  modalBackground: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.75)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    width: screenWidth * 0.9,
+    padding: spacingX._20,
+    borderRadius: radius._16,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 15,
+  },
+  closeBtn: {
+    padding: 4,
+  },
+  modalSubmitBtn: {
+    backgroundColor: colors.primary,
+    paddingVertical: 14,
+    borderRadius: radius._12,
+    borderWidth: 1,
+    borderColor: colors.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });

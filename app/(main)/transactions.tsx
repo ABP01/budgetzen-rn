@@ -45,6 +45,7 @@ const TransactionsScreen = () => {
   const [circle, setCircle] = useState<CircleType>('VITAL');
   const [source, setSource] = useState<SourceType>('CASH');
   const [description, setDescription] = useState('');
+  const [selectedProjectId, setSelectedProjectId] = useState<string>('');
 
   const amount = parseInt(amountStr.replace(/\s/g, '')) || 0;
 
@@ -61,7 +62,7 @@ const TransactionsScreen = () => {
     }
 
     try {
-      await addTransaction(txType, amount, circle, source, description);
+      await addTransaction(txType, amount, circle, source, description, selectedProjectId || undefined);
       
       // Auto-allocation message to Cushion
       const isCushionFunded = emergencyCushionAllocated >= emergencyCushionLimit;
@@ -79,6 +80,7 @@ const TransactionsScreen = () => {
       // Reset form
       setAmountStr('');
       setDescription('');
+      setSelectedProjectId('');
       setActiveTab('history');
     } catch (err) {
       Alert.alert('Erreur', "Impossible d'enregistrer la transaction.");
@@ -288,6 +290,51 @@ const TransactionsScreen = () => {
                       ))}
                     </View>
                   </View>
+                )}
+
+                {/* Project Tagging Selector */}
+                {txType === 'expense' && (circle === 'CROISSANCE' || circle === 'PLAISIR') && (
+                  (() => {
+                    const relevantProjects = projects.filter(p => {
+                      if (p.id === 'emergency-cushion') return false;
+                      if (circle === 'PLAISIR') return p.isPlaisir;
+                      if (circle === 'CROISSANCE') return !p.isPlaisir;
+                      return false;
+                    });
+                    if (relevantProjects.length === 0) return null;
+
+                    return (
+                      <View style={styles.inputGroup}>
+                        <Typo size={14} fontWeight="600" color={colors.textLight}>
+                          Associer à un projet (Optionnel)
+                        </Typo>
+                        <View style={styles.projectTagContainer}>
+                          {relevantProjects.map(p => {
+                            const isSelected = selectedProjectId === p.id;
+                            return (
+                              <Pressable
+                                key={p.id}
+                                style={[
+                                  styles.projectTagBtn,
+                                  isSelected && styles.activeProjectTagBtn,
+                                  isSelected && { borderColor: circle === 'CROISSANCE' ? colors.primary : '#0ea5e9' }
+                                ]}
+                                onPress={() => setSelectedProjectId(isSelected ? '' : p.id)}
+                              >
+                                <Typo
+                                  size={12}
+                                  fontWeight="700"
+                                  color={isSelected ? colors.white : colors.textLighter}
+                                >
+                                  {p.name} ({formatFCFA(p.allocatedAmount)} alloué)
+                                </Typo>
+                              </Pressable>
+                            );
+                          })}
+                        </View>
+                      </View>
+                    );
+                  })()
                 )}
 
                 {/* Liquid Source Selection */}
@@ -510,5 +557,21 @@ const styles = StyleSheet.create({
     borderRadius: radius._12,
     borderWidth: 1,
     borderColor: 'rgba(14, 165, 233, 0.3)',
+  },
+  projectTagContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  projectTagBtn: {
+    backgroundColor: colors.neutral800,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: radius._10,
+    borderWidth: 1,
+    borderColor: '#1E1E1E',
+  },
+  activeProjectTagBtn: {
+    backgroundColor: '#1E1E1E',
   },
 });

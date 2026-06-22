@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 
@@ -22,6 +23,7 @@ export interface Transaction {
   description: string;
   date: string; // ISO date
   timestamp: number;
+  projectId?: string; // Associated project ID for double-spend reconciliation
 }
 
 export interface Project {
@@ -48,7 +50,8 @@ interface AuthContextProps {
     amount: number,
     cercle: 'VITAL' | 'CROISSANCE' | 'PLAISIR',
     source: 'CASH' | 'WAVE' | 'ORANGE_MONEY' | 'MOOV' | 'MTN',
-    description: string
+    description: string,
+    projectId?: string
   ) => Promise<void>;
   createProject: (
     name: string,
@@ -57,6 +60,8 @@ interface AuthContextProps {
     isPlaisir: boolean
   ) => Promise<{ success: boolean; error?: string }>;
   allocateToProject: (projectId: string, amount: number) => Promise<{ success: boolean; error?: string }>;
+  deallocateFunds: (projectId: string, amount: number) => Promise<{ success: boolean; error?: string }>;
+  deleteProject: (projectId: string) => Promise<void>;
   emergencyCushionLimit: number;
   emergencyCushionAllocated: number;
   totalBalance: number;
@@ -171,11 +176,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     // Create system emergency cushion project
     const limit = 3 * vitalExpensesLimit;
+    const existingCushion = projects.find(p => p.id === 'emergency-cushion');
     const systemCushion: Project = {
       id: 'emergency-cushion',
       name: 'Coussin de Sécurité',
       targetAmount: limit,
-      allocatedAmount: 0,
+      allocatedAmount: existingCushion ? existingCushion.allocatedAmount : 0,
       priority: 1,
       isPlaisir: false,
     };
@@ -193,7 +199,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     amount: number,
     cercle: 'VITAL' | 'CROISSANCE' | 'PLAISIR',
     source: 'CASH' | 'WAVE' | 'ORANGE_MONEY' | 'MOOV' | 'MTN',
-    description: string
+    description: string,
+    projectId?: string
   ) => {
     const integerAmount = Math.round(amount);
     const newTransaction: Transaction = {
@@ -205,32 +212,46 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       description,
       date: new Date().toISOString(),
       timestamp: Date.now(),
+      projectId,
     };
 
     const updatedTransactions = [newTransaction, ...transactions];
     setTransactions(updatedTransactions);
     await AsyncStorage.setItem('@pursio_transactions', JSON.stringify(updatedTransactions));
 
+    let updatedProjectsList = [...projects];
+
+    // Double-spend reconciliation: Deduct from project allocation if expense is linked to a project
+    if (type === 'expense' && projectId) {
+      updatedProjectsList = updatedProjectsList.map(p => {
+        if (p.id === projectId) {
+          return { ...p, allocatedAmount: Math.max(0, p.allocatedAmount - integerAmount) };
+        }
+        return p;
+      });
+    }
+
     // Offline rule US #02: Any incoming flow (income) automatically allocates to emergency cushion if not funded
     if (type === 'income') {
       const cushionLimit = profile ? 3 * profile.vitalExpensesLimit : 0;
-      const currentCushion = projects.find(p => p.id === 'emergency-cushion');
+      const currentCushion = updatedProjectsList.find(p => p.id === 'emergency-cushion');
       const currentAllocated = currentCushion ? currentCushion.allocatedAmount : 0;
 
       if (currentAllocated < cushionLimit) {
         const remainingToFund = cushionLimit - currentAllocated;
         const autoAllocateAmount = Math.min(integerAmount, remainingToFund);
 
-        const updatedProjects = projects.map(p => {
+        updatedProjectsList = updatedProjectsList.map(p => {
           if (p.id === 'emergency-cushion') {
             return { ...p, allocatedAmount: p.allocatedAmount + autoAllocateAmount, targetAmount: cushionLimit };
           }
           return p;
         });
-        setProjects(updatedProjects);
-        await AsyncStorage.setItem('@pursio_projects', JSON.stringify(updatedProjects));
       }
     }
+
+    setProjects(updatedProjectsList);
+    await AsyncStorage.setItem('@pursio_projects', JSON.stringify(updatedProjectsList));
   };
 
   const createProject = async (
@@ -274,11 +295,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       };
     }
 
-    // Verify balance availability
-    if (amount > totalBalance && projectId !== 'emergency-cushion') {
+    // Verify balance availability against unallocated funds
+    const totalAllocated = projects.reduce((acc, p) => acc + p.allocatedAmount, 0);
+    const unallocatedBalance = totalBalance - totalAllocated;
+
+    if (amount > unallocatedBalance) {
       return {
         success: false,
-        error: "Solde insuffisant pour cette allocation.",
+        error: `Solde disponible insuffisant pour cette allocation. Solde libre restant : ${unallocatedBalance.toLocaleString('fr-FR')} FCFA.`,
       };
     }
 
@@ -292,6 +316,40 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setProjects(updatedProjects);
     await AsyncStorage.setItem('@pursio_projects', JSON.stringify(updatedProjects));
     return { success: true };
+  };
+
+  const deallocateFunds = async (projectId: string, amount: number) => {
+    const targetProject = projects.find(p => p.id === projectId);
+    if (!targetProject) return { success: false, error: 'Projet introuvable.' };
+
+    if (amount <= 0) return { success: false, error: 'Montant invalide.' };
+    if (amount > targetProject.allocatedAmount) {
+      return {
+        success: false,
+        error: `Impossible de retirer plus que le montant alloué (${targetProject.allocatedAmount.toLocaleString('fr-FR')} FCFA).`,
+      };
+    }
+
+    const updatedProjects = projects.map(p => {
+      if (p.id === projectId) {
+        return { ...p, allocatedAmount: Math.max(0, p.allocatedAmount - Math.round(amount)) };
+      }
+      return p;
+    });
+
+    setProjects(updatedProjects);
+    await AsyncStorage.setItem('@pursio_projects', JSON.stringify(updatedProjects));
+    return { success: true };
+  };
+
+  const deleteProject = async (projectId: string) => {
+    if (projectId === 'emergency-cushion') {
+      Alert.alert('Erreur', 'Impossible de supprimer le coussin de sécurité système.');
+      return;
+    }
+    const updatedProjects = projects.filter(p => p.id !== projectId);
+    setProjects(updatedProjects);
+    await AsyncStorage.setItem('@pursio_projects', JSON.stringify(updatedProjects));
   };
 
   return (
@@ -309,6 +367,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         addTransaction,
         createProject,
         allocateToProject,
+        deallocateFunds,
+        deleteProject,
         emergencyCushionLimit,
         emergencyCushionAllocated,
         totalBalance,
