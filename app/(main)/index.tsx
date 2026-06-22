@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { StyleSheet, View, ScrollView, RefreshControl, Pressable, Dimensions, Image } from 'react-native';
 import { BlurView } from 'expo-blur';
+import { LiquidGlass } from '@/components/LiquidGlass';
 import { useAuth } from '@/context/AuthContext';
 import ScreenWrapper from '@/components/ScreenWrapper';
 import Typo from '@/components/Typo';
@@ -115,7 +116,7 @@ const Dashboard = () => {
         </View>
 
         {/* Total Available Balance Card */}
-        <BlurView intensity={12} tint="dark" style={styles.balanceCard}>
+        <LiquidGlass intensity={12} style={styles.balanceCard}>
           <Typo size={12} color={colors.textLighter} fontWeight="700" style={styles.balanceLabel}>
             SOLDE TOTAL
           </Typo>
@@ -145,7 +146,7 @@ const Dashboard = () => {
               {"Capacité théorique : "}{formatFCFA(theoreticalSavingsCapacity)}/mois
             </Typo>
           </View>
-        </BlurView>
+        </LiquidGlass>
 
         {/* Concentric Circles Gauge */}
         <View style={styles.gaugeContainer}>
@@ -174,7 +175,7 @@ const Dashboard = () => {
           </View>
 
           {activeProjects.length === 0 ? (
-            <BlurView intensity={12} tint="dark" style={styles.emptyProjectsCard}>
+            <LiquidGlass intensity={12} style={styles.emptyProjectsCard}>
               <Typo size={14} color={colors.neutral400}>
                 Aucun projet actif en cours.
               </Typo>
@@ -183,7 +184,7 @@ const Dashboard = () => {
                   Créer un projet
                 </Typo>
               </Pressable>
-            </BlurView>
+            </LiquidGlass>
           ) : (
             <ScrollView
               horizontal
@@ -193,7 +194,7 @@ const Dashboard = () => {
               {activeProjects.map((p) => {
                 const progress = p.targetAmount > 0 ? p.allocatedAmount / p.targetAmount : 0;
                 return (
-                  <BlurView key={p.id} intensity={12} tint="dark" style={styles.projectMiniCard}>
+                  <LiquidGlass key={p.id} intensity={12} style={styles.projectMiniCard}>
                     <View style={styles.projectMiniHeader}>
                       <LIcon icon={icons.folder} size={18} color={p.isPlaisir ? '#0ea5e9' : colors.primary} />
                       <View style={styles.projectPriorityBadge}>
@@ -222,7 +223,7 @@ const Dashboard = () => {
                     <Typo size={10} color={colors.textLighter} style={{ alignSelf: 'flex-end', marginTop: 4 }}>
                       {Math.round(progress * 100)}%
                     </Typo>
-                  </BlurView>
+                  </LiquidGlass>
                 );
               })}
             </ScrollView>
@@ -230,7 +231,7 @@ const Dashboard = () => {
         </View>
 
         {/* Local Emergency Cushion Card (Fsécurité) */}
-        <BlurView intensity={12} tint="dark" style={[styles.cushionCard, !isCushionFunded && styles.cushionUnfunded]}>
+        <LiquidGlass intensity={12} style={[styles.cushionCard, !isCushionFunded && styles.cushionUnfunded]}>
           <View style={styles.cushionHeader}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
               <LIcon
@@ -279,26 +280,26 @@ const Dashboard = () => {
               {Math.round(cushionProgress * 100)}%
             </Typo>
           </View>
-        </BlurView>
+        </LiquidGlass>
 
         {/* Monthly Summary Cards Grid */}
         <View style={styles.summaryGrid}>
-          <BlurView intensity={12} tint="dark" style={styles.summaryItem}>
+          <LiquidGlass intensity={12} style={styles.summaryItem}>
             <Typo size={11} color={colors.textLight}>
               Cercle Vital (Dépenses)
             </Typo>
             <Typo size={15} fontWeight="800">
               {formatFCFA(vitalSpent)}
             </Typo>
-          </BlurView>
-          <BlurView intensity={12} tint="dark" style={styles.summaryItem}>
+          </LiquidGlass>
+          <LiquidGlass intensity={12} style={styles.summaryItem}>
             <Typo size={11} color={colors.textLight}>
               Cercle Plaisir (Dépenses)
             </Typo>
             <Typo size={15} fontWeight="800">
               {formatFCFA(plaisirSpent)}
             </Typo>
-          </BlurView>
+          </LiquidGlass>
         </View>
 
         {/* Recent Transactions List */}
@@ -315,14 +316,14 @@ const Dashboard = () => {
           </View>
 
           {transactions.length === 0 ? (
-            <BlurView intensity={12} tint="dark" style={styles.emptyContainer}>
+            <LiquidGlass intensity={12} style={styles.emptyContainer}>
               <LIcon icon={icons.note} size={32} color={colors.neutral500} />
               <Typo size={14} color={colors.neutral400} style={{ marginTop: 8 }}>
                 Aucune transaction pour le moment.
               </Typo>
-            </BlurView>
+            </LiquidGlass>
           ) : (
-            <BlurView intensity={12} tint="dark" style={styles.transactionsList}>
+            <LiquidGlass intensity={12} style={styles.transactionsList}>
               {transactions.slice(0, 3).map((item) => {
                 const isIncome = item.type === 'income';
                 return (
@@ -357,7 +358,7 @@ const Dashboard = () => {
                   </View>
                 );
               })}
-            </BlurView>
+            </LiquidGlass>
           )}
         </View>
       </ScrollView>
