@@ -3,14 +3,16 @@ import { StyleSheet, View } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
+  useAnimatedProps,
   withTiming,
-  withRepeat,
   withSequence,
   Easing,
 } from 'react-native-reanimated';
+import Svg, { Circle, G } from 'react-native-svg';
 import { colors } from '@/constants/theme';
 import Typo from './Typo';
-import * as Icons from 'phosphor-react-native';
+
+const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
 interface GaugeCirclesProps {
   vitalProgress: number; // 0 to 1+
@@ -25,14 +27,14 @@ const GaugeCircles = ({
   plaisirProgress = 0,
   animateCroissance = false,
 }: GaugeCirclesProps) => {
-  // Shared values for scale animations
+  // Shared values for animated progress (0 to 1)
   const vitalAnim = useSharedValue(0);
   const croissanceAnim = useSharedValue(0);
   const plaisirAnim = useSharedValue(0);
 
   // Pulse animation for Croissance (middle circle)
   const pulseScale = useSharedValue(1);
-  const pulseGlow = useSharedValue(0.2);
+  const pulseOpacity = useSharedValue(1);
 
   useEffect(() => {
     vitalAnim.value = withTiming(Math.min(1, Math.max(0, vitalProgress)), { duration: 1000 });
@@ -43,92 +45,163 @@ const GaugeCircles = ({
   useEffect(() => {
     if (animateCroissance) {
       pulseScale.value = withSequence(
-        withTiming(1.15, { duration: 150, easing: Easing.out(Easing.ease) }),
-        withTiming(1, { duration: 300, easing: Easing.inOut(Easing.ease) })
+        withTiming(1.1, { duration: 150, easing: Easing.out(Easing.ease) }),
+        withTiming(1.0, { duration: 300, easing: Easing.inOut(Easing.ease) })
       );
-      pulseGlow.value = withSequence(
+      pulseOpacity.value = withSequence(
         withTiming(0.8, { duration: 150 }),
-        withTiming(0.2, { duration: 300 })
+        withTiming(1.0, { duration: 300 })
       );
     }
   }, [animateCroissance]);
 
-  // Handle color override for Vital if exceeded by 5%
   const isVitalExceeded = vitalProgress > 1.05;
   const vitalColor = isVitalExceeded ? colors.rose : colors.white;
 
-  // Animated styles
-  const vitalStyle = useAnimatedStyle(() => ({
-    opacity: vitalAnim.value,
-    transform: [{ scale: vitalAnim.value }],
+  // Dimensions
+  const size = 180;
+  const strokeWidth = 10;
+  const center = size / 2;
+
+  // Radii
+  const rVital = 75;
+  const rCroissance = 55;
+  const rPlaisir = 35;
+
+  // Circumferences
+  const cVital = 2 * Math.PI * rVital;
+  const cCroissance = 2 * Math.PI * rCroissance;
+  const cPlaisir = 2 * Math.PI * rPlaisir;
+
+  // Animated Props for SVG paths
+  const vitalProps = useAnimatedProps(() => ({
+    strokeDashoffset: cVital - vitalAnim.value * cVital,
   }));
 
-  const croissanceStyle = useAnimatedStyle(() => ({
-    opacity: croissanceAnim.value,
-    transform: [{ scale: croissanceAnim.value * pulseScale.value }],
-    shadowOpacity: pulseGlow.value,
+  const croissanceProps = useAnimatedProps(() => ({
+    strokeDashoffset: cCroissance - croissanceAnim.value * cCroissance,
   }));
 
-  const plaisirStyle = useAnimatedStyle(() => ({
-    opacity: plaisirAnim.value,
-    transform: [{ scale: plaisirAnim.value }],
+  const plaisirProps = useAnimatedProps(() => ({
+    strokeDashoffset: cPlaisir - plaisirAnim.value * cPlaisir,
   }));
+
+  // Middle group animation style (pulse)
+  const middleGroupStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: pulseScale.value }],
+    opacity: pulseOpacity.value,
+  }));
+
+  // Overall Score Calculation
+  const avgProgress = Math.round(
+    ((Math.min(1, vitalProgress) + Math.min(1, croissanceProgress) + Math.min(1, plaisirProgress)) / 3) * 100
+  );
 
   return (
     <View style={styles.container}>
-      {/* Outer Circle - VITAL */}
-      <Animated.View style={[styles.circle, styles.outerCircle, { borderColor: '#1A1A1A' }, vitalStyle]}>
-        <View style={[styles.indicatorArc, {
-          borderColor: vitalColor,
-          borderTopColor: 'transparent',
-          borderRightColor: vitalProgress > 0.25 ? vitalColor : 'transparent',
-          borderBottomColor: vitalProgress > 0.5 ? vitalColor : 'transparent',
-          borderLeftColor: vitalProgress > 0.75 ? vitalColor : 'transparent',
-        }]} />
-        
-        {/* Middle Circle - CROISSANCE */}
-        <Animated.View style={[styles.circle, styles.middleCircle, { borderColor: '#1E1E1E' }, croissanceStyle]}>
-          <View style={[styles.indicatorArc, {
-            borderColor: colors.primary,
-            borderTopColor: 'transparent',
-            borderRightColor: croissanceProgress > 0.25 ? colors.primary : 'transparent',
-            borderBottomColor: croissanceProgress > 0.5 ? colors.primary : 'transparent',
-            borderLeftColor: croissanceProgress > 0.75 ? colors.primary : 'transparent',
-          }]} />
+      <View style={styles.svgWrapper}>
+        <Svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+          {/* VITAL - Outer Ring */}
+          {/* Background Track */}
+          <Circle
+            cx={center}
+            cy={center}
+            r={rVital}
+            stroke="#121212"
+            strokeWidth={strokeWidth}
+            fill="transparent"
+          />
+          {/* Progress Ring */}
+          <AnimatedCircle
+            cx={center}
+            cy={center}
+            r={rVital}
+            stroke={vitalColor}
+            strokeWidth={strokeWidth}
+            strokeDasharray={`${cVital} ${cVital}`}
+            animatedProps={vitalProps}
+            strokeLinecap="round"
+            fill="transparent"
+            transform={`rotate(-90 ${center} ${center})`}
+          />
 
-          {/* Inner Circle - PLAISIR */}
-          <Animated.View style={[styles.circle, styles.innerCircle, { borderColor: '#2A2A2A' }, plaisirStyle]}>
-            <View style={[styles.indicatorArc, {
-              borderColor: '#0ea5e9',
-              borderTopColor: 'transparent',
-              borderRightColor: plaisirProgress > 0.25 ? '#0ea5e9' : 'transparent',
-              borderBottomColor: plaisirProgress > 0.5 ? '#0ea5e9' : 'transparent',
-              borderLeftColor: plaisirProgress > 0.75 ? '#0ea5e9' : 'transparent',
-            }]} />
-            
-            {/* Center Icon */}
-            <Icons.Compass size={24} color={colors.primary} weight="duotone" />
-          </Animated.View>
-        </Animated.View>
-      </Animated.View>
+          {/* CROISSANCE - Middle Ring */}
+          {/* Background Track */}
+          <Circle
+            cx={center}
+            cy={center}
+            r={rCroissance}
+            stroke="#1E1E1E"
+            strokeWidth={strokeWidth}
+            fill="transparent"
+          />
+          {/* Progress Ring */}
+          <AnimatedCircle
+            cx={center}
+            cy={center}
+            r={rCroissance}
+            stroke={colors.primary}
+            strokeWidth={strokeWidth}
+            strokeDasharray={`${cCroissance} ${cCroissance}`}
+            animatedProps={croissanceProps}
+            strokeLinecap="round"
+            fill="transparent"
+            transform={`rotate(-90 ${center} ${center})`}
+          />
+
+          {/* PLAISIR - Inner Ring */}
+          {/* Background Track */}
+          <Circle
+            cx={center}
+            cy={center}
+            r={rPlaisir}
+            stroke="#2A2A2A"
+            strokeWidth={strokeWidth}
+            fill="transparent"
+          />
+          {/* Progress Ring */}
+          <AnimatedCircle
+            cx={center}
+            cy={center}
+            r={rPlaisir}
+            stroke="#0ea5e9"
+            strokeWidth={strokeWidth}
+            strokeDasharray={`${cPlaisir} ${cPlaisir}`}
+            animatedProps={plaisirProps}
+            strokeLinecap="round"
+            fill="transparent"
+            transform={`rotate(-90 ${center} ${center})`}
+          />
+        </Svg>
+
+        {/* Center Text */}
+        <View style={styles.centerContainer}>
+          <Typo size={22} fontWeight="800" color={colors.white}>
+            {avgProgress}%
+          </Typo>
+          <Typo size={9} color={colors.primary} fontWeight="700" style={{ marginTop: -2 }}>
+            Optimisé
+          </Typo>
+        </View>
+      </View>
 
       {/* Side Legend */}
       <View style={styles.legendContainer}>
         <View style={styles.legendItem}>
           <View style={[styles.legendDot, { backgroundColor: vitalColor }]} />
-          <Typo size={12} color={colors.textLight} fontWeight="500">
+          <Typo size={12} color={colors.textLight} fontWeight="600">
             Vital : {Math.round(vitalProgress * 100)}%
           </Typo>
         </View>
         <View style={styles.legendItem}>
           <View style={[styles.legendDot, { backgroundColor: colors.primary }]} />
-          <Typo size={12} color={colors.textLight} fontWeight="500">
+          <Typo size={12} color={colors.textLight} fontWeight="600">
             Croissance : {Math.round(croissanceProgress * 100)}%
           </Typo>
         </View>
         <View style={styles.legendItem}>
           <View style={[styles.legendDot, { backgroundColor: '#0ea5e9' }]} />
-          <Typo size={12} color={colors.textLight} fontWeight="500">
+          <Typo size={12} color={colors.textLight} fontWeight="600">
             Plaisir : {Math.round(plaisirProgress * 100)}%
           </Typo>
         </View>
@@ -144,46 +217,29 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 30,
-    marginVertical: 20,
-    backgroundColor: colors.neutral800,
-    padding: 20,
-    borderRadius: 20,
+    gap: 25,
+    marginVertical: 10,
+    backgroundColor: 'rgba(18, 18, 18, 0.4)',
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#1E1E1E',
+    borderColor: 'rgba(255, 255, 255, 0.05)',
   },
-  circle: {
+  svgWrapper: {
+    width: 180,
+    height: 180,
+    position: 'relative',
     justifyContent: 'center',
     alignItems: 'center',
-    borderRadius: 999,
-    borderWidth: 6,
-    position: 'relative',
   },
-  outerCircle: {
-    width: 160,
-    height: 160,
-  },
-  middleCircle: {
-    width: 116,
-    height: 116,
-    shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 0 },
-    shadowRadius: 10,
-    elevation: 8,
-  },
-  innerCircle: {
-    width: 72,
-    height: 72,
-  },
-  indicatorArc: {
+  centerContainer: {
     position: 'absolute',
-    top: -6,
-    left: -6,
-    right: -6,
-    bottom: -6,
-    borderRadius: 999,
-    borderWidth: 6,
-    transform: [{ rotate: '-45deg' }],
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: 70,
+    height: 70,
+    borderRadius: 35,
   },
   legendContainer: {
     gap: 12,

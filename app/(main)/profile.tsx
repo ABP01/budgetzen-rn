@@ -5,13 +5,13 @@ import ScreenWrapper from '@/components/ScreenWrapper';
 import Typo from '@/components/Typo';
 import Input from '@/components/Input';
 import Button from '@/components/Button';
-import { colors, spacingX, spacingY } from '@/constants/theme';
+import { colors, spacingX, spacingY, radius } from '@/constants/theme';
 import { verticalScale } from '@/utils/styling';
 import { formatFCFA } from '@/utils/currency';
-import * as Icons from 'phosphor-react-native';
+import { LIcon, icons } from '@/constants/icons';
 
 const ProfileScreen = () => {
-  const { user, profile, setupProfile, logout, theoreticalSavingsCapacity, emergencyCushionLimit } = useAuth();
+  const { user, profile, setupProfile, logout } = useAuth();
   const [incomeStr, setIncomeStr] = useState(profile ? profile.monthlyIncome.toString() : '');
   const [vitalStr, setVitalStr] = useState(profile ? profile.vitalExpensesLimit.toString() : '');
   const [loading, setLoading] = useState(false);
@@ -66,10 +66,10 @@ const ProfileScreen = () => {
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
       <View style={{ flex: 1 }}>
         <ScreenWrapper>
-          <ScrollView contentContainerStyle={styles.container}>
+          <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
             <View style={styles.header}>
-              <Icons.UserCircle size={64} color={colors.primary} weight="duotone" />
-              <Typo fontWeight="800" size={24} style={{ marginTop: 10 }}>
+              <LIcon icon={icons.userCircleOutline} size={64} color={colors.primary} />
+              <Typo fontWeight="800" size={24} style={{ marginTop: 10, fontFamily: 'Outfit-Bold' }}>
                 {user?.name || 'Utilisateur'}
               </Typo>
               <Typo size={14} color={colors.neutral400}>
@@ -93,7 +93,7 @@ const ProfileScreen = () => {
                   keyboardType="numeric"
                   value={incomeStr ? parseInt(incomeStr).toLocaleString('fr-FR').replace(/,/g, ' ') : ''}
                   onChangeText={handleIncomeChange}
-                  icon={<Icons.Coins size={22} color={colors.primary} weight="fill" />}
+                  icon={<LIcon icon={icons.dollar} size={20} color={colors.primary} />}
                 />
               </View>
 
@@ -107,7 +107,7 @@ const ProfileScreen = () => {
                   keyboardType="numeric"
                   value={vitalStr ? parseInt(vitalStr).toLocaleString('fr-FR').replace(/,/g, ' ') : ''}
                   onChangeText={handleVitalChange}
-                  icon={<Icons.House size={22} color={colors.rose} weight="fill" />}
+                  icon={<LIcon icon={icons.homeOutline} size={20} color={colors.rose} />}
                 />
               </View>
 
@@ -140,7 +140,7 @@ const ProfileScreen = () => {
 
             {/* Logout Action */}
             <Pressable style={styles.logoutBtn} onPress={handleLogout}>
-              <Icons.SignOut size={22} color={colors.rose} />
+              <LIcon icon={icons.exit} size={20} color={colors.rose} />
               <Typo size={15} fontWeight="700" color={colors.rose}>
                 Se déconnecter
               </Typo>
@@ -167,9 +167,9 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: colors.neutral800,
     padding: spacingX._20,
-    borderRadius: 16,
+    borderRadius: radius._16,
     borderWidth: 1,
-    borderColor: '#1E1E1E',
+    borderColor: 'rgba(255, 255, 255, 0.06)',
     gap: 15,
   },
   inputGroup: {
@@ -179,7 +179,7 @@ const styles = StyleSheet.create({
     gap: 10,
     backgroundColor: '#1E1E1E',
     padding: 12,
-    borderRadius: 10,
+    borderRadius: radius._10,
     marginTop: 5,
   },
   statsRow: {
@@ -192,10 +192,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     gap: 10,
-    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+    backgroundColor: 'rgba(239, 68, 68, 0.08)',
     borderWidth: 1,
-    borderColor: 'rgba(239, 68, 68, 0.3)',
-    borderRadius: 12,
+    borderColor: 'rgba(239, 68, 68, 0.25)',
+    borderRadius: radius._12,
     paddingVertical: 14,
   },
 });

@@ -1,20 +1,24 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, View, ScrollView, RefreshControl, Pressable } from 'react-native';
+import { StyleSheet, View, ScrollView, RefreshControl, Pressable, Dimensions, Image } from 'react-native';
+import { BlurView } from 'expo-blur';
 import { useAuth } from '@/context/AuthContext';
 import ScreenWrapper from '@/components/ScreenWrapper';
 import Typo from '@/components/Typo';
 import GaugeCircles from '@/components/GaugeCircles';
-import { colors, spacingX, spacingY } from '@/constants/theme';
+import { colors, spacingX, spacingY, radius } from '@/constants/theme';
 import { verticalScale } from '@/utils/styling';
 import { formatFCFA } from '@/utils/currency';
-import * as Icons from 'phosphor-react-native';
+import { LIcon, icons } from '@/constants/icons';
 import { useRouter } from 'expo-router';
+
+const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
 const Dashboard = () => {
   const {
     user,
     profile,
     transactions,
+    projects,
     totalBalance,
     emergencyCushionLimit,
     emergencyCushionAllocated,
@@ -65,69 +69,184 @@ const Dashboard = () => {
 
   const isCushionFunded = emergencyCushionAllocated >= emergencyCushionLimit;
 
+  // Filter active projects (excluding system emergency cushion)
+  const activeProjects = projects.filter(p => p.id !== 'emergency-cushion');
+
   return (
-    <ScreenWrapper>
+    <ScreenWrapper style={{ position: 'relative', overflow: 'hidden' }}>
+      {/* Decorative glass background blobs */}
+      <View style={styles.bgBlobPrimary} />
+      <View style={styles.bgBlobBlue} />
+      <View style={styles.bgBlobRose} />
+      <BlurView intensity={70} tint="dark" style={StyleSheet.absoluteFill} />
+      
       <ScrollView
         contentContainerStyle={styles.scrollContainer}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
+        showsVerticalScrollIndicator={false}
       >
         {/* Header Greeting */}
         <View style={styles.header}>
-          <View>
-            <Typo size={14} color={colors.textLight}>
-              Bonjour,
-            </Typo>
-            <Typo size={22} fontWeight="800">
-              {user?.name || 'Épargnant'}
-            </Typo>
-          </View>
-          <Pressable style={styles.profileBtn} onPress={() => router.push('/(main)/profile')}>
-            <Icons.UserCircle size={32} color={colors.primary} weight="duotone" />
+          <Pressable style={styles.avatarContainer} onPress={() => router.push('/(main)/profile')}>
+            <Image
+              source={require('@/assets/images/defaultAvatar.png')}
+              style={styles.avatar}
+            />
+            <View style={styles.headerText}>
+              <Typo size={18} fontWeight="800" style={styles.logoTitle}>
+                Pursio
+              </Typo>
+              <Typo size={12} color={colors.textLight}>
+                Bonjour, {user?.name || 'Épargnant'}
+              </Typo>
+            </View>
           </Pressable>
+          
+          <View style={styles.headerRight}>
+            <View style={styles.currencyBadge}>
+              <Typo size={11} fontWeight="800" color={colors.primary}>
+                FCFA
+              </Typo>
+            </View>
+            <Pressable style={styles.bellBtn}>
+              <LIcon icon={icons.bellOutline} size={20} color={colors.white} />
+            </Pressable>
+          </View>
         </View>
 
         {/* Total Available Balance Card */}
-        <View style={styles.balanceCard}>
-          <Typo size={14} color={colors.textLighter} fontWeight="500">
-            Liquidités Disponibles
+        <BlurView intensity={12} tint="dark" style={styles.balanceCard}>
+          <Typo size={12} color={colors.textLighter} fontWeight="700" style={styles.balanceLabel}>
+            SOLDE TOTAL
           </Typo>
-          <Typo size={36} fontWeight="800" color={colors.primary} style={styles.balanceText}>
+          <Typo size={34} fontWeight="800" color={colors.primary} style={styles.balanceText}>
             {formatFCFA(totalBalance)}
           </Typo>
+          
+          {/* Source tags */}
+          <View style={styles.sourcePillsContainer}>
+            <View style={styles.sourcePill}>
+              <View style={[styles.sourceDot, { backgroundColor: '#FF6600' }]} />
+              <Typo size={10} color={colors.textLight} fontWeight="600">Orange</Typo>
+            </View>
+            <View style={styles.sourcePill}>
+              <View style={[styles.sourceDot, { backgroundColor: '#00A3E0' }]} />
+              <Typo size={10} color={colors.textLight} fontWeight="600">Wave</Typo>
+            </View>
+            <View style={styles.sourcePill}>
+              <View style={[styles.sourceDot, { backgroundColor: '#fff' }]} />
+              <Typo size={10} color={colors.textLight} fontWeight="600">Cash</Typo>
+            </View>
+          </View>
+
           <View style={styles.capacityRow}>
-            <Icons.Sparkle size={16} color={colors.primary} weight="fill" />
-            <Typo size={12} color={colors.textLight} style={{ marginLeft: 6 }}>
-              {"Capacité d'épargne mensuelle théorique : "}{formatFCFA(theoreticalSavingsCapacity)}
+            <LIcon icon={icons.star} size={14} color={colors.primary} />
+            <Typo size={11} color={colors.textLighter} style={{ marginLeft: 6 }}>
+              {"Capacité théorique : "}{formatFCFA(theoreticalSavingsCapacity)}/mois
             </Typo>
           </View>
-        </View>
+        </BlurView>
 
         {/* Concentric Circles Gauge */}
-        <GaugeCircles
-          vitalProgress={vitalProgress}
-          croissanceProgress={cushionProgress}
-          plaisirProgress={plaisirProgress}
-          animateCroissance={animatePulse}
-        />
+        <View style={styles.gaugeContainer}>
+          <Typo size={12} fontWeight="800" color={colors.textLighter} style={styles.gaugeTitle}>
+            L'ÉQUILIBRE DES 3 CERCLES
+          </Typo>
+          <GaugeCircles
+            vitalProgress={vitalProgress}
+            croissanceProgress={cushionProgress}
+            plaisirProgress={plaisirProgress}
+            animateCroissance={animatePulse}
+          />
+        </View>
+
+        {/* Active Projects Scroll Section */}
+        <View style={styles.activeProjectsSection}>
+          <View style={styles.sectionHeader}>
+            <Typo size={18} fontWeight="800">
+              Projets Actifs
+            </Typo>
+            <Pressable onPress={() => router.push('/(main)/projects')}>
+              <Typo size={13} color={colors.primary} fontWeight="700">
+                VOIR TOUT
+              </Typo>
+            </Pressable>
+          </View>
+
+          {activeProjects.length === 0 ? (
+            <BlurView intensity={12} tint="dark" style={styles.emptyProjectsCard}>
+              <Typo size={14} color={colors.neutral400}>
+                Aucun projet actif en cours.
+              </Typo>
+              <Pressable style={styles.addProjectBtn} onPress={() => router.push('/(main)/projects')}>
+                <Typo size={12} color={colors.primary} fontWeight="700">
+                  Créer un projet
+                </Typo>
+              </Pressable>
+            </BlurView>
+          ) : (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.projectsScroll}
+            >
+              {activeProjects.map((p) => {
+                const progress = p.targetAmount > 0 ? p.allocatedAmount / p.targetAmount : 0;
+                return (
+                  <BlurView key={p.id} intensity={12} tint="dark" style={styles.projectMiniCard}>
+                    <View style={styles.projectMiniHeader}>
+                      <LIcon icon={icons.folder} size={18} color={p.isPlaisir ? '#0ea5e9' : colors.primary} />
+                      <View style={styles.projectPriorityBadge}>
+                        <Typo size={9} fontWeight="800" color={colors.neutral900}>
+                          P{p.priority}
+                        </Typo>
+                      </View>
+                    </View>
+                    <Typo size={14} fontWeight="800" textProps={{ numberOfLines: 1 }} style={styles.projectMiniName}>
+                      {p.name}
+                    </Typo>
+                    <Typo size={11} color={colors.textLight} style={{ marginVertical: 4 }}>
+                      {formatFCFA(p.allocatedAmount)} / {formatFCFA(p.targetAmount)}
+                    </Typo>
+                    <View style={styles.projectProgressBg}>
+                      <View
+                        style={[
+                          styles.projectProgressFill,
+                          {
+                            width: `${Math.min(100, progress * 100)}%`,
+                            backgroundColor: p.isPlaisir ? '#0ea5e9' : colors.primary,
+                          },
+                        ]}
+                      />
+                    </View>
+                    <Typo size={10} color={colors.textLighter} style={{ alignSelf: 'flex-end', marginTop: 4 }}>
+                      {Math.round(progress * 100)}%
+                    </Typo>
+                  </BlurView>
+                );
+              })}
+            </ScrollView>
+          )}
+        </View>
 
         {/* Local Emergency Cushion Card (Fsécurité) */}
-        <View style={[styles.cushionCard, !isCushionFunded && styles.cushionUnfunded]}>
+        <BlurView intensity={12} tint="dark" style={[styles.cushionCard, !isCushionFunded && styles.cushionUnfunded]}>
           <View style={styles.cushionHeader}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-              {isCushionFunded ? (
-                <Icons.ShieldCheck size={24} color={colors.primary} weight="fill" />
-              ) : (
-                <Icons.WarningOctagon size={24} color={colors.rose} weight="fill" />
-              )}
-              <Typo size={16} fontWeight="700">
+              <LIcon
+                icon={isCushionFunded ? icons.shieldCheck : icons.warning}
+                size={22}
+                color={isCushionFunded ? colors.primary : colors.rose}
+              />
+              <Typo size={15} fontWeight="700">
                 Coussin de Précaution Local
               </Typo>
             </View>
             <View style={styles.lockContainer}>
               {!isCushionFunded && (
                 <View style={styles.lockTag}>
-                  <Icons.Lock size={12} color={colors.rose} weight="fill" />
-                  <Typo size={10} color={colors.rose} fontWeight="700" style={{ marginLeft: 4 }}>
+                  <LIcon icon={icons.lock} size={10} color={colors.rose} />
+                  <Typo size={9} color={colors.rose} fontWeight="700" style={{ marginLeft: 4 }}>
                     Projets Plaisir Verrouillés
                   </Typo>
                 </View>
@@ -135,7 +254,7 @@ const Dashboard = () => {
             </View>
           </View>
 
-          <Typo size={13} color={colors.textLight} style={{ marginVertical: 8 }}>
+          <Typo size={12} color={colors.textLight} style={{ marginVertical: 8 }}>
             Objectif (3 mois du Cercle Vital) : {formatFCFA(emergencyCushionLimit)}
           </Typo>
 
@@ -153,33 +272,33 @@ const Dashboard = () => {
           </View>
 
           <View style={styles.cushionFooter}>
-            <Typo size={14} fontWeight="800">
+            <Typo size={13} fontWeight="800">
               {formatFCFA(emergencyCushionAllocated)} constitué
             </Typo>
             <Typo size={12} color={colors.textLighter}>
               {Math.round(cushionProgress * 100)}%
             </Typo>
           </View>
-        </View>
+        </BlurView>
 
         {/* Monthly Summary Cards Grid */}
         <View style={styles.summaryGrid}>
-          <View style={styles.summaryItem}>
-            <Typo size={12} color={colors.textLight}>
+          <BlurView intensity={12} tint="dark" style={styles.summaryItem}>
+            <Typo size={11} color={colors.textLight}>
               Cercle Vital (Dépenses)
             </Typo>
-            <Typo size={16} fontWeight="800">
+            <Typo size={15} fontWeight="800">
               {formatFCFA(vitalSpent)}
             </Typo>
-          </View>
-          <View style={styles.summaryItem}>
-            <Typo size={12} color={colors.textLight}>
+          </BlurView>
+          <BlurView intensity={12} tint="dark" style={styles.summaryItem}>
+            <Typo size={11} color={colors.textLight}>
               Cercle Plaisir (Dépenses)
             </Typo>
-            <Typo size={16} fontWeight="800">
+            <Typo size={15} fontWeight="800">
               {formatFCFA(plaisirSpent)}
             </Typo>
-          </View>
+          </BlurView>
         </View>
 
         {/* Recent Transactions List */}
@@ -196,32 +315,32 @@ const Dashboard = () => {
           </View>
 
           {transactions.length === 0 ? (
-            <View style={styles.emptyContainer}>
-              <Icons.FileText size={32} color={colors.neutral500} />
+            <BlurView intensity={12} tint="dark" style={styles.emptyContainer}>
+              <LIcon icon={icons.note} size={32} color={colors.neutral500} />
               <Typo size={14} color={colors.neutral400} style={{ marginTop: 8 }}>
                 Aucune transaction pour le moment.
               </Typo>
-            </View>
+            </BlurView>
           ) : (
-            <View style={styles.transactionsList}>
+            <BlurView intensity={12} tint="dark" style={styles.transactionsList}>
               {transactions.slice(0, 3).map((item) => {
                 const isIncome = item.type === 'income';
                 return (
                   <View key={item.id} style={styles.transactionItem}>
                     <View style={styles.txIconContainer}>
-                      {isIncome ? (
-                        <Icons.ArrowUpRight size={20} color={colors.primary} weight="bold" />
-                      ) : (
-                        <Icons.ArrowDownLeft size={20} color={colors.rose} weight="bold" />
-                      )}
+                      <LIcon
+                        icon={isIncome ? icons.arrowUp : icons.arrowDown}
+                        size={18}
+                        color={isIncome ? colors.primary : colors.rose}
+                      />
                     </View>
                     <View style={styles.txDetails}>
-                      <Typo size={15} fontWeight="700" numberOfLines={1}>
+                      <Typo size={14} fontWeight="700" textProps={{ numberOfLines: 1 }}>
                         {item.description || (isIncome ? 'Flux Entrant' : 'Flux Sortant')}
                       </Typo>
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 }}>
                         <View style={[styles.circleBadge, {
-                          backgroundColor: item.cercle === 'VITAL' ? colors.neutral700 : item.cercle === 'CROISSANCE' ? colors.primaryDark : '#0284c7'
+                          backgroundColor: item.cercle === 'VITAL' ? colors.neutral700 : item.cercle === 'CROISSANCE' ? colors.primaryDark : '#0ea5e9'
                         }]}>
                           <Typo size={9} fontWeight="700" color={item.cercle === 'CROISSANCE' ? colors.neutral900 : colors.white}>
                             {item.cercle}
@@ -232,13 +351,13 @@ const Dashboard = () => {
                         </Typo>
                       </View>
                     </View>
-                    <Typo size={15} fontWeight="800" color={isIncome ? colors.primary : colors.white}>
+                    <Typo size={14} fontWeight="800" color={isIncome ? colors.primary : colors.white}>
                       {isIncome ? '+' : '-'} {formatFCFA(item.amount)}
                     </Typo>
                   </View>
                 );
               })}
-            </View>
+            </BlurView>
           )}
         </View>
       </ScrollView>
@@ -260,34 +379,194 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: verticalScale(15),
   },
-  profileBtn: {
-    padding: 4,
+  avatarContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  avatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    borderWidth: 1.5,
+    borderColor: 'rgba(255, 255, 255, 0.15)',
+  },
+  headerText: {
+    marginLeft: 10,
+  },
+  logoTitle: {
+    fontFamily: 'Outfit-Bold',
+    letterSpacing: 0.5,
+  },
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  currencyBadge: {
+    backgroundColor: '#1E1E1E',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  bellBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: '#121212',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  bgBlobPrimary: {
+    position: 'absolute',
+    width: screenWidth * 0.7,
+    height: screenWidth * 0.7,
+    borderRadius: (screenWidth * 0.7) / 2,
+    backgroundColor: 'rgba(220, 253, 139, 0.12)', // Neon Lime
+    top: -50,
+    right: -50,
+  },
+  bgBlobBlue: {
+    position: 'absolute',
+    width: screenWidth * 0.6,
+    height: screenWidth * 0.6,
+    borderRadius: (screenWidth * 0.6) / 2,
+    backgroundColor: 'rgba(14, 165, 233, 0.09)', // Electric Blue
+    top: screenHeight * 0.35,
+    left: -screenWidth * 0.2,
+  },
+  bgBlobRose: {
+    position: 'absolute',
+    width: screenWidth * 0.65,
+    height: screenWidth * 0.65,
+    borderRadius: (screenWidth * 0.65) / 2,
+    backgroundColor: 'rgba(239, 68, 68, 0.06)', // Rose
+    bottom: 50,
+    right: -55,
   },
   balanceCard: {
-    backgroundColor: colors.neutral800,
+    backgroundColor: 'rgba(25, 25, 25, 0.55)',
     padding: spacingX._20,
-    borderRadius: 16,
+    borderRadius: radius._16,
     borderWidth: 1,
-    borderColor: '#1E1E1E',
-    gap: 8,
+    borderColor: 'rgba(255, 255, 255, 0.06)',
+    gap: 6,
+    overflow: 'hidden',
+  },
+  balanceLabel: {
+    letterSpacing: 1.5,
   },
   balanceText: {
     letterSpacing: -1,
   },
+  sourcePillsContainer: {
+    flexDirection: 'row',
+    gap: 8,
+    marginVertical: 4,
+  },
+  sourcePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+  },
+  sourceDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    marginRight: 6,
+  },
   capacityRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 4,
+    marginTop: 6,
+  },
+  gaugeContainer: {
+    alignItems: 'center',
+    gap: 8,
+  },
+  gaugeTitle: {
+    letterSpacing: 1.5,
+    alignSelf: 'flex-start',
+    marginLeft: 5,
+  },
+  activeProjectsSection: {
+    gap: 12,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  emptyProjectsCard: {
+    backgroundColor: 'rgba(25, 25, 25, 0.55)',
+    padding: 20,
+    borderRadius: radius._16,
+    alignItems: 'center',
+    gap: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.06)',
+  },
+  addProjectBtn: {
+    backgroundColor: 'rgba(220, 253, 139, 0.1)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
+  },
+  projectsScroll: {
+    gap: 12,
+    paddingRight: 15,
+  },
+  projectMiniCard: {
+    width: 170,
+    backgroundColor: 'rgba(25, 25, 25, 0.55)',
+    borderRadius: radius._16,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.06)',
+    overflow: 'hidden',
+  },
+  projectMiniHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  projectPriorityBadge: {
+    backgroundColor: colors.primary,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  projectMiniName: {
+    marginTop: 8,
+  },
+  projectProgressBg: {
+    height: 5,
+    backgroundColor: '#1E1E1E',
+    borderRadius: 2.5,
+    overflow: 'hidden',
+  },
+  projectProgressFill: {
+    height: '100%',
+    borderRadius: 2.5,
   },
   cushionCard: {
-    backgroundColor: colors.neutral800,
+    backgroundColor: 'rgba(25, 25, 25, 0.55)',
     padding: spacingX._15,
-    borderRadius: 16,
+    borderRadius: radius._16,
     borderWidth: 1,
-    borderColor: '#1E1E1E',
+    borderColor: 'rgba(255, 255, 255, 0.06)',
+    overflow: 'hidden',
   },
   cushionUnfunded: {
-    borderColor: 'rgba(239, 68, 68, 0.3)',
+    borderColor: 'rgba(239, 68, 68, 0.2)',
   },
   cushionHeader: {
     flexDirection: 'row',
@@ -301,20 +580,20 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: 'rgba(239, 68, 68, 0.15)',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: 6,
   },
   progressBarBg: {
-    height: 8,
+    height: 6,
     backgroundColor: '#1E1E1E',
-    borderRadius: 4,
+    borderRadius: 3,
     overflow: 'hidden',
     marginVertical: 8,
   },
   progressBarFill: {
     height: '100%',
-    borderRadius: 4,
+    borderRadius: 3,
   },
   cushionFooter: {
     flexDirection: 'row',
@@ -328,12 +607,13 @@ const styles = StyleSheet.create({
   },
   summaryItem: {
     flex: 1,
-    backgroundColor: colors.neutral800,
+    backgroundColor: 'rgba(25, 25, 25, 0.55)',
     padding: spacingX._12,
-    borderRadius: 12,
+    borderRadius: radius._12,
     borderWidth: 1,
-    borderColor: '#1E1E1E',
+    borderColor: 'rgba(255, 255, 255, 0.06)',
     gap: 6,
+    overflow: 'hidden',
   },
   recentSection: {
     gap: 12,
@@ -344,19 +624,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   emptyContainer: {
-    backgroundColor: colors.neutral800,
+    backgroundColor: 'rgba(25, 25, 25, 0.55)',
     padding: 30,
-    borderRadius: 16,
+    borderRadius: radius._16,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#1E1E1E',
+    borderColor: 'rgba(255, 255, 255, 0.06)',
+    overflow: 'hidden',
   },
   transactionsList: {
-    backgroundColor: colors.neutral800,
-    borderRadius: 16,
+    backgroundColor: 'rgba(25, 25, 25, 0.55)',
+    borderRadius: radius._16,
     borderWidth: 1,
-    borderColor: '#1E1E1E',
+    borderColor: 'rgba(255, 255, 255, 0.06)',
     overflow: 'hidden',
   },
   transactionItem: {
@@ -367,8 +648,8 @@ const styles = StyleSheet.create({
     borderBottomColor: '#1E1E1E',
   },
   txIconContainer: {
-    width: 40,
-    height: 40,
+    width: 36,
+    height: 36,
     borderRadius: 10,
     backgroundColor: '#151515',
     justifyContent: 'center',

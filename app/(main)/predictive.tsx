@@ -10,10 +10,10 @@ import { useAuth } from '@/context/AuthContext';
 import ScreenWrapper from '@/components/ScreenWrapper';
 import Typo from '@/components/Typo';
 import Input from '@/components/Input';
-import { colors, spacingX, spacingY } from '@/constants/theme';
+import { colors, spacingX, spacingY, radius } from '@/constants/theme';
 import { verticalScale } from '@/utils/styling';
 import { formatFCFA } from '@/utils/currency';
-import * as Icons from 'phosphor-react-native';
+import { LIcon, icons } from '@/constants/icons';
 
 const PredictiveScreen = () => {
   const {
@@ -45,12 +45,12 @@ const PredictiveScreen = () => {
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
       <View style={{ flex: 1 }}>
         <ScreenWrapper>
-          <ScrollView contentContainerStyle={styles.container}>
+          <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
             <View style={styles.header}>
-              <Typo fontWeight="800" size={30}>
+              <Typo fontWeight="800" size={30} style={{ fontFamily: 'Outfit-Bold' }}>
                 {"Simulateur d'Achat"}
               </Typo>
-              <Typo fontWeight="800" size={30} color="#0ea5e9">
+              <Typo fontWeight="800" size={30} color="#0ea5e9" style={{ fontFamily: 'Outfit-Bold' }}>
                 Alerte Prédictive
               </Typo>
               <Typo size={15} color={colors.textLight} style={{ marginTop: 6 }}>
@@ -68,7 +68,7 @@ const PredictiveScreen = () => {
                 keyboardType="numeric"
                 value={simulateAmountStr ? parseInt(simulateAmountStr).toLocaleString('fr-FR').replace(/,/g, ' ') : ''}
                 onChangeText={handleAmountChange}
-                icon={<Icons.Calculator size={22} color="#0ea5e9" weight="fill" />}
+                icon={<LIcon icon={icons.calculator} size={20} color="#0ea5e9" />}
               />
             </View>
 
@@ -77,7 +77,7 @@ const PredictiveScreen = () => {
               <View style={styles.resultContainer}>
                 {dailySavings <= 0 ? (
                   <View style={styles.errorCard}>
-                    <Icons.WarningCircle size={24} color={colors.rose} weight="fill" />
+                    <LIcon icon={icons.warning} size={22} color={colors.rose} />
                     <Typo size={14} color={colors.textLight} style={{ marginLeft: 8, flex: 1 }}>
                       {"Votre capacité d'épargne est de 0 FCFA. Réglez vos revenus ou charges vitales dans votre profil pour pouvoir simuler des impacts."}
                     </Typo>
@@ -85,8 +85,8 @@ const PredictiveScreen = () => {
                 ) : (
                   <View style={styles.warningCard}>
                     <View style={styles.warningHeader}>
-                      <Icons.Warning size={24} color="#ef4444" weight="fill" />
-                      <Typo size={18} fontWeight="800" color="#ef4444">
+                      <LIcon icon={icons.warning} size={22} color={colors.rose} />
+                      <Typo size={18} fontWeight="800" color={colors.rose}>
                         Impact sur votre Objectif
                       </Typo>
                     </View>
@@ -104,10 +104,10 @@ const PredictiveScreen = () => {
                     </Typo>
 
                     <View style={styles.delayDisplay}>
-                      <Typo size={48} fontWeight="900" color="#ef4444">
+                      <Typo size={48} fontWeight="900" color={colors.rose}>
                         {delayDays}
                       </Typo>
-                      <Typo size={18} fontWeight="800" color="#ef4444" style={{ marginTop: -5 }}>
+                      <Typo size={18} fontWeight="800" color={colors.rose} style={{ marginTop: -5 }}>
                         Jours de retard
                       </Typo>
                     </View>
@@ -147,7 +147,7 @@ const PredictiveScreen = () => {
             ) : (
               // Empty State
               <View style={styles.placeholderCard}>
-                <Icons.Eye size={42} color={colors.neutral500} />
+                <LIcon icon={icons.search} size={36} color={colors.neutral500} />
                 <Typo size={14} color={colors.neutral400} style={{ marginTop: 12, textAlign: 'center' }}>
                   {"Entrez un montant ci-dessus pour projeter instantanément l'impact de cet achat sur vos projets."}
                 </Typo>
@@ -174,9 +174,9 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: colors.neutral800,
     padding: spacingX._15,
-    borderRadius: 16,
+    borderRadius: radius._16,
     borderWidth: 1,
-    borderColor: '#1E1E1E',
+    borderColor: 'rgba(255, 255, 255, 0.06)',
     gap: 10,
   },
   resultContainer: {
@@ -187,7 +187,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(239, 68, 68, 0.25)',
     padding: spacingX._20,
-    borderRadius: 16,
+    borderRadius: radius._16,
   },
   warningHeader: {
     flexDirection: 'row',
@@ -215,23 +215,23 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(239, 68, 68, 0.3)',
     padding: 15,
-    borderRadius: 12,
+    borderRadius: radius._12,
   },
   placeholderCard: {
     backgroundColor: colors.neutral800,
     padding: 40,
-    borderRadius: 16,
+    borderRadius: radius._16,
     borderWidth: 1,
-    borderColor: '#1E1E1E',
+    borderColor: 'rgba(255, 255, 255, 0.06)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   secondaryCard: {
     backgroundColor: colors.neutral800,
     padding: spacingX._15,
-    borderRadius: 16,
+    borderRadius: radius._16,
     borderWidth: 1,
-    borderColor: '#1E1E1E',
+    borderColor: 'rgba(255, 255, 255, 0.06)',
   },
   projectImpactRow: {
     flexDirection: 'row',

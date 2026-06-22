@@ -1,7 +1,7 @@
 import React from 'react';
 import { Tabs } from 'expo-router';
 import { colors } from '@/constants/theme';
-import * as Icons from 'phosphor-react-native';
+import { LIcon, icons } from '@/constants/icons';
 import { Platform } from 'react-native';
 import { verticalScale } from '@/utils/styling';
 
@@ -31,10 +31,10 @@ export default function MainLayout() {
         options={{
           title: 'Accueil',
           tabBarIcon: ({ color, focused }) => (
-            <Icons.House
+            <LIcon
+              icon={focused ? icons.home : icons.homeOutline}
               size={24}
               color={color}
-              weight={focused ? 'fill' : 'regular'}
             />
           ),
         }}
@@ -44,10 +44,10 @@ export default function MainLayout() {
         options={{
           title: 'Transactions',
           tabBarIcon: ({ color, focused }) => (
-            <Icons.Receipt
+            <LIcon
+              icon={focused ? icons.wallet : icons.walletOutline}
               size={24}
               color={color}
-              weight={focused ? 'fill' : 'regular'}
             />
           ),
         }}
@@ -57,10 +57,10 @@ export default function MainLayout() {
         options={{
           title: 'Projets',
           tabBarIcon: ({ color, focused }) => (
-            <Icons.Target
+            <LIcon
+              icon={focused ? icons.folder : icons.folderOutline}
               size={24}
               color={color}
-              weight={focused ? 'fill' : 'regular'}
             />
           ),
         }}
@@ -70,10 +70,10 @@ export default function MainLayout() {
         options={{
           title: 'Simulateur',
           tabBarIcon: ({ color, focused }) => (
-            <Icons.Calculator
+            <LIcon
+              icon={focused ? icons.calculator : icons.calculatorOutline}
               size={24}
               color={color}
-              weight={focused ? 'fill' : 'regular'}
             />
           ),
         }}
@@ -83,10 +83,10 @@ export default function MainLayout() {
         options={{
           title: 'Profil',
           tabBarIcon: ({ color, focused }) => (
-            <Icons.User
+            <LIcon
+              icon={focused ? icons.user : icons.userOutline}
               size={24}
               color={color}
-              weight={focused ? 'fill' : 'regular'}
             />
           ),
         }}

@@ -1,16 +1,26 @@
 import { scale, verticalScale } from "@/utils/styling";
 
 export const colors = {
-  primary: "#DCFD8B", // Neon Lime
+  // Primary — Spec: Neon Lime
+  primary: "#DCFD8B",
   primaryLight: "#E8FFA1",
   primaryDark: "#A8CF59",
+
+  // Text
   text: "#fff",
   textLight: "#e5e5e5",
   textLighter: "#d4d4d4",
+
+  // Base
   white: "#fff",
   black: "#000",
+
+  // Semantic — Cercles
   rose: "#ef4444",
   green: "#16a34a",
+  skyBlue: "#0ea5e9",      // Cercle Plaisir
+
+  // Neutral Surfaces — Spec
   neutral50: "#fafafa",
   neutral100: "#f5f5f5",
   neutral200: "#e5e5e5",
@@ -20,9 +30,19 @@ export const colors = {
   neutral500: "#737373",
   neutral600: "#525252",
   neutral700: "#404040",
-  neutral800: "#121212", // Surface
-  neutral850: "#1A1A1A", // Surface Dark
-  neutral900: "#050505", // Noir Absolu
+  neutral800: "#121212",   // Spec: Surface Secondaire
+  neutral850: "#1A1A1A",   // Spec: Surface Secondaire (variante)
+  neutral900: "#050505",   // Spec: Noir Absolu — Background Principal
+
+  // Cards & Surfaces
+  surface: "#121212",
+  surfaceDark: "#1A1A1A",
+  surfaceLight: "#1E1E1E",
+  surfaceCard: "#0F0F0F",
+
+  // Disabled state (Spec CTA)
+  disabledBg: "#2A2A2A",
+  disabledText: "#666666",
 };
 
 export const spacingX = {
@@ -59,8 +79,9 @@ export const radius = {
   _3: verticalScale(3),
   _6: verticalScale(6),
   _10: verticalScale(10),
-  _12: verticalScale(12),
+  _12: verticalScale(12),  // Spec: Bords de Formes
   _15: verticalScale(15),
+  _16: verticalScale(16),  // Spec: Bords de Formes
   _17: verticalScale(17),
   _20: verticalScale(20),
   _30: verticalScale(30),

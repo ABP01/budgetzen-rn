@@ -8,16 +8,35 @@ import {
   Pressable,
   TouchableWithoutFeedback,
   Keyboard,
+  Image,
 } from 'react-native';
-import { useAuth, Project } from '@/context/AuthContext';
+import { useAuth } from '@/context/AuthContext';
 import ScreenWrapper from '@/components/ScreenWrapper';
 import Typo from '@/components/Typo';
 import Button from '@/components/Button';
 import Input from '@/components/Input';
-import { colors, spacingX, spacingY } from '@/constants/theme';
+import { colors, spacingX, spacingY, radius } from '@/constants/theme';
 import { verticalScale } from '@/utils/styling';
 import { formatFCFA } from '@/utils/currency';
-import * as Icons from 'phosphor-react-native';
+import { LIcon, icons } from '@/constants/icons';
+
+// Beautiful placeholder covers based on project properties
+const getProjectCover = (name: string, isSystem: boolean, isPlaisir: boolean) => {
+  const lowercaseName = name.toLowerCase();
+  if (isSystem || lowercaseName.includes('coussin') || lowercaseName.includes('securite') || lowercaseName.includes('sécurité')) {
+    return 'https://images.unsplash.com/photo-1579621970795-87faff2f9050?w=500&auto=format&fit=crop&q=60'; // Cushion / Safe / Money
+  }
+  if (lowercaseName.includes('voyage') || lowercaseName.includes('trip') || lowercaseName.includes('vacance') || lowercaseName.includes('lome') || lowercaseName.includes('lomé')) {
+    return 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=500&auto=format&fit=crop&q=60'; // Travel / Beach
+  }
+  if (lowercaseName.includes('ordinateur') || lowercaseName.includes('mac') || lowercaseName.includes('phone') || lowercaseName.includes('tech') || lowercaseName.includes('pc')) {
+    return 'https://images.unsplash.com/photo-1519389950473-47ba0277781c?w=500&auto=format&fit=crop&q=60'; // Tech / Workspace
+  }
+  if (isPlaisir) {
+    return 'https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?w=500&auto=format&fit=crop&q=60'; // Pleasure / Cinema / Fun
+  }
+  return 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=500&auto=format&fit=crop&q=60'; // Neon abstract
+};
 
 const ProjectsScreen = () => {
   const {
@@ -29,7 +48,7 @@ const ProjectsScreen = () => {
     totalBalance,
   } = useAuth();
 
-  const [activeTab, setActiveTab] = useState<'list' | 'add' | 'allocate'>('list');
+  const [activeTab, setActiveTab] = useState<'list' | 'allocate' | 'add'>('list');
 
   // Form states - Create Project
   const [name, setName] = useState('');
@@ -169,75 +188,88 @@ const ProjectsScreen = () => {
               <FlatList
                 data={projects}
                 keyExtractor={item => item.id}
-                contentContainerStyle={{ gap: 16, paddingBottom: 20 }}
+                contentContainerStyle={{ gap: 18, paddingBottom: 20 }}
+                showsVerticalScrollIndicator={false}
                 renderItem={({ item }) => {
                   const progress = item.targetAmount > 0 ? item.allocatedAmount / item.targetAmount : 0;
                   const isSystem = item.id === 'emergency-cushion';
+                  const coverUrl = getProjectCover(item.name, isSystem, item.isPlaisir);
 
                   return (
                     <View style={[styles.projectCard, isSystem && styles.systemCard]}>
-                      <View style={styles.projectHeader}>
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                          {isSystem ? (
-                            <Icons.Shield size={20} color={colors.primary} weight="fill" />
-                          ) : item.isPlaisir ? (
-                            <Icons.Sparkle size={20} color="#0ea5e9" weight="fill" />
+                      {/* Card Image Header */}
+                      <View style={styles.cardImageContainer}>
+                        <Image source={{ uri: coverUrl }} style={styles.cardImage} />
+                        <View style={styles.imageOverlay} />
+                        
+                        {/* Overlay elements */}
+                        <View style={styles.cardOverlayHeader}>
+                          <View style={styles.cardIconBadge}>
+                            <LIcon
+                              icon={isSystem ? icons.shieldCheck : item.isPlaisir ? icons.star : icons.folder}
+                              size={16}
+                              color={isSystem ? colors.primary : item.isPlaisir ? '#0ea5e9' : colors.white}
+                            />
+                          </View>
+                          
+                          {/* Lock badge for locked plaisir projects */}
+                          {item.isPlaisir && !isCushionFunded ? (
+                            <View style={styles.lockBadge}>
+                              <LIcon icon={icons.lock} size={11} color={colors.rose} />
+                              <Typo size={10} color={colors.rose} fontWeight="800" style={{ marginLeft: 4 }}>
+                                Verrouillé
+                              </Typo>
+                            </View>
                           ) : (
-                            <Icons.FolderSimpleStar size={20} color={colors.primary} weight="fill" />
+                            <View style={[styles.typeBadge, { backgroundColor: isSystem ? 'rgba(220, 253, 139, 0.2)' : item.isPlaisir ? 'rgba(14, 165, 233, 0.2)' : 'rgba(255, 255, 255, 0.15)' }]}>
+                              <Typo size={9} fontWeight="800" color={isSystem ? colors.primary : item.isPlaisir ? '#0ea5e9' : colors.white}>
+                                {isSystem ? 'SÉCURITÉ' : item.isPlaisir ? 'PLAISIR' : 'CROISSANCE'}
+                              </Typo>
+                            </View>
                           )}
+                        </View>
+                      </View>
+
+                      {/* Content Section */}
+                      <View style={styles.cardContent}>
+                        <View style={styles.projectHeaderRow}>
                           <Typo size={16} fontWeight="800">
                             {item.name}
                           </Typo>
+                          <Typo size={11} color={colors.textLighter} fontWeight="700">
+                            Priorité {item.priority}
+                          </Typo>
                         </View>
 
-                        {/* Lock overlay for Plaisir projects if cushion is not funded */}
-                        {item.isPlaisir && !isCushionFunded && (
-                          <View style={styles.lockBadge}>
-                            <Icons.Lock size={12} color={colors.rose} weight="fill" />
-                            <Typo size={10} color={colors.rose} fontWeight="700" style={{ marginLeft: 4 }}>
-                              Bloqué
-                            </Typo>
+                        <View style={styles.projectGoalRow}>
+                          <Typo size={12} color={colors.textLight}>
+                            Cible : {formatFCFA(item.targetAmount)}
+                          </Typo>
+                        </View>
+
+                        {/* Progress Bar & Percentage Row */}
+                        <View style={styles.progressRow}>
+                          <View style={styles.progressBg}>
+                            <View
+                              style={[
+                                styles.progressFill,
+                                {
+                                  width: `${Math.min(100, progress * 100)}%`,
+                                  backgroundColor: isSystem ? (isCushionFunded ? colors.primary : colors.rose) : item.isPlaisir ? '#0ea5e9' : colors.primary,
+                                },
+                              ]}
+                            />
                           </View>
-                        )}
+                          <Typo size={12} fontWeight="800" color={colors.white} style={styles.progressPercent}>
+                            {Math.round(progress * 100)}%
+                          </Typo>
+                        </View>
 
-                        {!item.isPlaisir && (
-                          <View style={styles.cercleBadge}>
-                            <Typo size={9} fontWeight="700" color={colors.neutral900}>
-                              {isSystem ? 'SÉCURITÉ' : 'CROISSANCE'}
-                            </Typo>
-                          </View>
-                        )}
-                      </View>
-
-                      <View style={styles.projectGoalRow}>
-                        <Typo size={13} color={colors.textLight}>
-                          Cible : {formatFCFA(item.targetAmount)}
-                        </Typo>
-                        <Typo size={13} color={colors.neutral400}>
-                          Priorité {item.priority}
-                        </Typo>
-                      </View>
-
-                      {/* Progress bar */}
-                      <View style={styles.progressBg}>
-                        <View
-                          style={[
-                            styles.progressFill,
-                            {
-                              width: `${Math.min(100, progress * 100)}%`,
-                              backgroundColor: isSystem ? (isCushionFunded ? colors.primary : colors.rose) : colors.primary,
-                            },
-                          ]}
-                        />
-                      </View>
-
-                      <View style={styles.projectFooter}>
-                        <Typo size={14} fontWeight="800">
-                          {formatFCFA(item.allocatedAmount)} alloué
-                        </Typo>
-                        <Typo size={13} color={colors.textLighter}>
-                          {Math.round(progress * 100)}%
-                        </Typo>
+                        <View style={styles.projectFooter}>
+                          <Typo size={14} fontWeight="800" color={colors.primary}>
+                            {formatFCFA(item.allocatedAmount)} alloué
+                          </Typo>
+                        </View>
                       </View>
                     </View>
                   );
@@ -245,7 +277,7 @@ const ProjectsScreen = () => {
               />
             ) : activeTab === 'allocate' ? (
               // ALLOCATE SAVINGS FORM
-              <ScrollView contentContainerStyle={styles.formScroll}>
+              <ScrollView contentContainerStyle={styles.formScroll} showsVerticalScrollIndicator={false}>
                 <Typo size={22} fontWeight="800">
                   {"Allouer de l'épargne"}
                 </Typo>
@@ -283,7 +315,7 @@ const ProjectsScreen = () => {
                             >
                               {p.name}
                             </Typo>
-                            {isLocked && <Icons.Lock size={16} color={colors.rose} weight="fill" />}
+                            {isLocked && <LIcon icon={icons.lock} size={14} color={colors.rose} />}
                           </View>
                           <Typo
                             size={11}
@@ -308,14 +340,14 @@ const ProjectsScreen = () => {
                     keyboardType="numeric"
                     value={allocateStr ? parseInt(allocateStr).toLocaleString('fr-FR').replace(/,/g, ' ') : ''}
                     onChangeText={handleAllocateChange}
-                    icon={<Icons.ArrowsDownUp size={22} color={colors.primary} weight="bold" />}
+                    icon={<LIcon icon={icons.settings} size={18} color={colors.primary} />}
                   />
                 </View>
 
                 {/* Validation Callout for locks */}
                 {!isCushionFunded && (
                   <View style={styles.lockAlertCard}>
-                    <Icons.Warning size={20} color={colors.rose} weight="fill" />
+                    <LIcon icon={icons.warning} size={18} color={colors.rose} />
                     <Typo size={12} color={colors.textLight} style={{ marginLeft: 8, flex: 1, lineHeight: 16 }}>
                       {"Votre coussin de précaution local n'est pas entièrement constitué. Le versement vers des projets de loisir (Plaisir) est verrouillé."}
                     </Typo>
@@ -330,7 +362,7 @@ const ProjectsScreen = () => {
               </ScrollView>
             ) : (
               // CREATE PROJECT FORM
-              <ScrollView contentContainerStyle={styles.formScroll}>
+              <ScrollView contentContainerStyle={styles.formScroll} showsVerticalScrollIndicator={false}>
                 <Typo size={22} fontWeight="800">
                   Créer un projet
                 </Typo>
@@ -344,7 +376,7 @@ const ProjectsScreen = () => {
                     placeholder="Ex: Achat Ordinateur, Voyage à Lomé"
                     value={name}
                     onChangeText={setName}
-                    icon={<Icons.Tag size={22} color={colors.primary} />}
+                    icon={<LIcon icon={icons.note} size={20} color={colors.primary} />}
                   />
                 </View>
 
@@ -358,7 +390,7 @@ const ProjectsScreen = () => {
                     keyboardType="numeric"
                     value={targetStr ? parseInt(targetStr).toLocaleString('fr-FR').replace(/,/g, ' ') : ''}
                     onChangeText={handleTargetChange}
-                    icon={<Icons.Coins size={22} color={colors.primary} weight="fill" />}
+                    icon={<LIcon icon={icons.dollar} size={20} color={colors.primary} />}
                   />
                 </View>
 
@@ -422,7 +454,7 @@ const ProjectsScreen = () => {
                         >
                           Plaisir (Loisirs/Optionnel)
                         </Typo>
-                        {!isCushionFunded && <Icons.Lock size={14} color={colors.neutral600} weight="fill" />}
+                        {!isCushionFunded && <LIcon icon={icons.lock} size={14} color={colors.neutral600} />}
                       </View>
                     </Pressable>
                   </View>
@@ -458,7 +490,7 @@ const styles = StyleSheet.create({
   tabContainer: {
     flexDirection: 'row',
     backgroundColor: colors.neutral800,
-    borderRadius: 12,
+    borderRadius: radius._12,
     padding: 4,
     marginVertical: verticalScale(15),
   },
@@ -466,47 +498,89 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 10,
     alignItems: 'center',
-    borderRadius: 8,
+    borderRadius: radius._10,
   },
   activeTab: {
     backgroundColor: colors.primary,
   },
   projectCard: {
     backgroundColor: colors.neutral800,
-    padding: spacingX._15,
-    borderRadius: 16,
+    borderRadius: radius._16,
     borderWidth: 1,
     borderColor: '#1E1E1E',
-    gap: 8,
+    overflow: 'hidden',
   },
   systemCard: {
-    borderColor: 'rgba(220, 253, 139, 0.3)',
-    backgroundColor: '#0F110B',
+    borderColor: 'rgba(220, 253, 139, 0.25)',
   },
-  projectHeader: {
+  cardImageContainer: {
+    height: 110,
+    position: 'relative',
+    width: '100%',
+  },
+  cardImage: {
+    height: '100%',
+    width: '100%',
+  },
+  imageOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+  },
+  cardOverlayHeader: {
+    position: 'absolute',
+    top: 12,
+    left: 12,
+    right: 12,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  lockBadge: {
-    flexDirection: 'row',
+  cardIconBadge: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(239, 68, 68, 0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.15)',
+  },
+  typeBadge: {
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 8,
   },
-  cercleBadge: {
-    backgroundColor: colors.primary,
+  lockBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    borderWidth: 1,
+    borderColor: 'rgba(239, 68, 68, 0.3)',
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 8,
+  },
+  cardContent: {
+    padding: 16,
+    gap: 8,
+  },
+  projectHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
   projectGoalRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
   },
+  progressRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginTop: 4,
+  },
   progressBg: {
+    flex: 1,
     height: 6,
     backgroundColor: '#151515',
     borderRadius: 3,
@@ -516,10 +590,15 @@ const styles = StyleSheet.create({
     height: '100%',
     borderRadius: 3,
   },
+  progressPercent: {
+    width: 35,
+    textAlign: 'right',
+  },
   projectFooter: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    marginTop: 4,
   },
   formScroll: {
     gap: spacingY._20,
@@ -532,7 +611,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     backgroundColor: colors.neutral800,
     padding: 4,
-    borderRadius: 12,
+    borderRadius: radius._12,
     borderWidth: 1,
     borderColor: '#1E1E1E',
   },
@@ -540,7 +619,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 12,
     alignItems: 'center',
-    borderRadius: 8,
+    borderRadius: radius._10,
   },
   activePriorityBtn: {
     backgroundColor: colors.primary,
@@ -553,7 +632,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.neutral800,
     paddingVertical: 14,
     alignItems: 'center',
-    borderRadius: 10,
+    borderRadius: radius._10,
     borderWidth: 1,
     borderColor: '#1E1E1E',
   },
@@ -571,7 +650,7 @@ const styles = StyleSheet.create({
   selectorCard: {
     backgroundColor: colors.neutral800,
     padding: 12,
-    borderRadius: 10,
+    borderRadius: radius._10,
     borderWidth: 1,
     borderColor: '#1E1E1E',
   },
@@ -591,6 +670,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(239, 68, 68, 0.3)',
     padding: 12,
-    borderRadius: 12,
+    borderRadius: radius._12,
   },
 });

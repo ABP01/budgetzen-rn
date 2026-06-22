@@ -25,10 +25,10 @@ const styles = StyleSheet.create({
     container: {
         flexDirection: "row",
         alignItems: "center",
-        borderColor: colors.neutral300,
+        borderColor: "#2A2A2A",
         height: verticalScale(54),
         borderWidth: 1,
-        borderRadius: radius._17,
+        borderRadius: radius._12,
         borderCurve: "continuous",
         justifyContent: "center",
         paddingHorizontal: spacingX._15,

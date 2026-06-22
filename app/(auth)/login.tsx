@@ -3,14 +3,16 @@ import Button from "@/components/Button";
 import Input from "@/components/Input";
 import ScreenWrapper from "@/components/ScreenWrapper";
 import Typo from "@/components/Typo";
-import { colors, spacingX, spacingY } from "@/constants/theme";
+import { colors, spacingX, spacingY, radius } from "@/constants/theme";
 import { verticalScale } from "@/utils/styling";
 import { useRouter } from "expo-router";
-import * as Icons from "phosphor-react-native";
+import { LIcon, icons } from "@/constants/icons";
 import React, { useRef, useState } from "react";
-import { Alert, Pressable, StyleSheet, View } from "react-native";
-
+import { Alert, Pressable, StyleSheet, View, Dimensions } from "react-native";
 import { useAuth } from "@/context/AuthContext";
+import { BlurView } from 'expo-blur';
+
+const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
 const Login = () => {
   const router = useRouter();
@@ -38,49 +40,43 @@ const Login = () => {
   };
 
   return (
-    <ScreenWrapper>
+    <ScreenWrapper style={{ position: 'relative', overflow: 'hidden' }}>
+      {/* Decorative glass background blobs */}
+      <View style={styles.bgBlobPrimary} />
+      <View style={styles.bgBlobBlue} />
+      <View style={styles.bgBlobRose} />
+      <BlurView intensity={70} tint="dark" style={StyleSheet.absoluteFill} />
+
       <View style={styles.container}>
         <BackButton iconSize={28} />
 
         <View style={{ gap: 5, marginTop: spacingY._20 }}>
-          <Typo fontWeight={"800"} size={30}>
+          <Typo fontWeight={"800"} size={30} style={{ fontFamily: 'Outfit-Bold' }}>
             Heureux de
           </Typo>
-          <Typo fontWeight={"800"} size={30}>
+          <Typo fontWeight={"800"} size={30} color={colors.primary} style={{ fontFamily: 'Outfit-Bold' }}>
             vous revoir !
           </Typo>
         </View>
 
         {/* form */}
         <View style={styles.form}>
-          <Typo size={16} color={colors.textLight}>
-            Connectez-vous pour suivre votre budget des 3 cercles
+          <Typo size={15} color={colors.textLighter} style={{ marginBottom: 10 }}>
+            Connectez-vous pour suivre votre budget des 3 cercles.
           </Typo>
-          {/* Input */}
+          
           <Input
             placeholder="Adresse e-mail"
             onChangeText={(value) => (emailRef.current = value)}
-            icon={
-              <Icons.At
-                size={verticalScale(26)}
-                color={colors.neutral300}
-                weight="fill"
-              />
-            }
+            icon={<LIcon icon={icons.envelope} size={20} color={colors.neutral400} />}
           />
           <Input
             placeholder="Mot de passe"
             secureTextEntry
             onChangeText={(value) => (passwordRef.current = value)}
-            icon={
-              <Icons.Lock
-                size={verticalScale(26)}
-                color={colors.neutral300}
-                weight="fill"
-              />
-            }
+            icon={<LIcon icon={icons.lock} size={20} color={colors.neutral400} />}
           />
-          <Typo style={{ alignSelf: "flex-end" }}>Mot de passe oublié ?</Typo>
+          <Typo style={{ alignSelf: "flex-end" }} color={colors.textLight}>Mot de passe oublié ?</Typo>
 
           <Button loading={isLoading} onPress={handleSubmit}>
             <Typo color={colors.neutral900} fontWeight={"700"}>
@@ -88,6 +84,7 @@ const Login = () => {
             </Typo>
           </Button>
         </View>
+        
         {/* footer */}
         <View style={styles.footer}>
           <Typo size={15}>Pas de compte ?</Typo>
@@ -109,29 +106,43 @@ const styles = StyleSheet.create({
     flex: 1,
     gap: spacingY._30,
     paddingHorizontal: spacingX._20,
-  },
-  welcomeText: {
-    fontSize: verticalScale(20),
-    fontWeight: "bold",
-    color: colors.text,
+    zIndex: 2,
   },
   form: {
     gap: spacingY._20,
-  },
-  forgotPassword: {
-    textAlign: "right",
-    fontWeight: "500",
-    color: colors.text,
   },
   footer: {
     flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
     gap: 5,
+    marginTop: 20,
   },
-  footerText: {
-    textAlign: "center",
-    color: colors.text,
-    fontSize: verticalScale(15),
+  bgBlobPrimary: {
+    position: 'absolute',
+    width: screenWidth * 0.7,
+    height: screenWidth * 0.7,
+    borderRadius: (screenWidth * 0.7) / 2,
+    backgroundColor: 'rgba(220, 253, 139, 0.12)', // Neon Lime
+    top: -50,
+    right: -50,
+  },
+  bgBlobBlue: {
+    position: 'absolute',
+    width: screenWidth * 0.6,
+    height: screenWidth * 0.6,
+    borderRadius: (screenWidth * 0.6) / 2,
+    backgroundColor: 'rgba(14, 165, 233, 0.08)', // Electric Blue
+    top: screenHeight * 0.35,
+    left: -screenWidth * 0.2,
+  },
+  bgBlobRose: {
+    position: 'absolute',
+    width: screenWidth * 0.65,
+    height: screenWidth * 0.65,
+    borderRadius: (screenWidth * 0.65) / 2,
+    backgroundColor: 'rgba(239, 68, 68, 0.05)', // Rose
+    bottom: 50,
+    right: -55,
   },
 });

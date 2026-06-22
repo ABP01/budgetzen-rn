@@ -8,17 +8,16 @@ import {
   Pressable,
   TouchableWithoutFeedback,
   Keyboard,
-  TextInput,
 } from 'react-native';
-import { useAuth, Transaction } from '@/context/AuthContext';
+import { useAuth } from '@/context/AuthContext';
 import ScreenWrapper from '@/components/ScreenWrapper';
 import Typo from '@/components/Typo';
 import Button from '@/components/Button';
 import Input from '@/components/Input';
-import { colors, spacingX, spacingY } from '@/constants/theme';
+import { colors, spacingX, spacingY, radius } from '@/constants/theme';
 import { verticalScale } from '@/utils/styling';
 import { formatFCFA } from '@/utils/currency';
-import * as Icons from 'phosphor-react-native';
+import { LIcon, icons } from '@/constants/icons';
 
 const Circles = ['VITAL', 'CROISSANCE', 'PLAISIR'] as const;
 type CircleType = typeof Circles[number];
@@ -154,7 +153,7 @@ const TransactionsScreen = () => {
 
                 {filteredTx.length === 0 ? (
                   <View style={styles.emptyState}>
-                    <Icons.FileX size={48} color={colors.neutral500} />
+                    <LIcon icon={icons.warningOutline} size={44} color={colors.neutral500} />
                     <Typo size={15} color={colors.neutral400} style={{ marginTop: 12 }}>
                       Aucune transaction trouvée.
                     </Typo>
@@ -162,27 +161,28 @@ const TransactionsScreen = () => {
                 ) : (
                   <FlatList
                     data={filteredTx}
-                    keyExtractor={item => item.id}
+                    keyExtractor={item => item.id || ''}
                     contentContainerStyle={{ gap: 12, paddingBottom: 20 }}
+                    showsVerticalScrollIndicator={false}
                     renderItem={({ item }) => {
                       const isIncome = item.type === 'income';
                       return (
                         <View style={styles.txCard}>
                           <View style={styles.txRow}>
                             <View style={styles.txIconBg}>
-                              {isIncome ? (
-                                <Icons.ArrowUpRight size={18} color={colors.primary} weight="bold" />
-                              ) : (
-                                <Icons.ArrowDownLeft size={18} color={colors.rose} weight="bold" />
-                              )}
+                              <LIcon
+                                icon={isIncome ? icons.arrowUp : icons.arrowDown}
+                                size={18}
+                                color={isIncome ? colors.primary : colors.rose}
+                              />
                             </View>
                             <View style={styles.txInfo}>
-                              <Typo size={15} fontWeight="700">
+                              <Typo size={15} fontWeight="700" textProps={{ numberOfLines: 1 }}>
                                 {item.description || (isIncome ? 'Entrée de fonds' : 'Achat')}
                               </Typo>
                               <View style={styles.txMeta}>
                                 <View style={[styles.circleBadge, {
-                                  backgroundColor: item.cercle === 'VITAL' ? colors.neutral700 : item.cercle === 'CROISSANCE' ? colors.primaryDark : '#0284c7'
+                                  backgroundColor: item.cercle === 'VITAL' ? colors.neutral700 : item.cercle === 'CROISSANCE' ? colors.primaryDark : '#0ea5e9'
                                 }]}>
                                   <Typo size={9} fontWeight="700" color={item.cercle === 'CROISSANCE' ? colors.neutral900 : colors.white}>
                                     {item.cercle}
@@ -205,7 +205,7 @@ const TransactionsScreen = () => {
               </View>
             ) : (
               // Add Transaction Form
-              <ScrollView contentContainerStyle={styles.formScroll}>
+              <ScrollView contentContainerStyle={styles.formScroll} showsVerticalScrollIndicator={false}>
                 <Typo size={22} fontWeight="800" style={{ marginBottom: 10 }}>
                   Enregistrer un flux
                 </Typo>
@@ -254,7 +254,7 @@ const TransactionsScreen = () => {
                     keyboardType="numeric"
                     value={amountStr ? parseInt(amountStr).toLocaleString('fr-FR').replace(/,/g, ' ') : ''}
                     onChangeText={handleAmountChange}
-                    icon={<Icons.Coins size={22} color={colors.primary} weight="fill" />}
+                    icon={<LIcon icon={icons.dollar} size={20} color={colors.primary} />}
                   />
                 </View>
 
@@ -323,7 +323,7 @@ const TransactionsScreen = () => {
                     placeholder="Ex: Facture électricité CEET, Dépôt Wave"
                     value={description}
                     onChangeText={setDescription}
-                    icon={<Icons.TextAlignLeft size={22} color={colors.neutral400} />}
+                    icon={<LIcon icon={icons.note} size={20} color={colors.neutral400} />}
                   />
                 </View>
 
@@ -331,7 +331,7 @@ const TransactionsScreen = () => {
                 {showPlaisirImpact && (
                   <View style={styles.impactCard}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                      <Icons.Warning size={20} color="#0ea5e9" weight="fill" />
+                      <LIcon icon={icons.warning} size={18} color="#0ea5e9" />
                       <Typo size={14} fontWeight="700" color="#0ea5e9">
                         {"Alerte d'Impact Prédictive (US #04)"}
                       </Typo>
@@ -374,7 +374,7 @@ const styles = StyleSheet.create({
   tabContainer: {
     flexDirection: 'row',
     backgroundColor: colors.neutral800,
-    borderRadius: 12,
+    borderRadius: radius._12,
     padding: 4,
     marginVertical: verticalScale(15),
   },
@@ -382,7 +382,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 10,
     alignItems: 'center',
-    borderRadius: 8,
+    borderRadius: radius._10,
   },
   activeTab: {
     backgroundColor: colors.primary,
@@ -413,7 +413,7 @@ const styles = StyleSheet.create({
   txCard: {
     backgroundColor: colors.neutral800,
     padding: spacingX._15,
-    borderRadius: 12,
+    borderRadius: radius._12,
     borderWidth: 1,
     borderColor: '#1E1E1E',
   },
@@ -424,7 +424,7 @@ const styles = StyleSheet.create({
   txIconBg: {
     width: 36,
     height: 36,
-    borderRadius: 8,
+    borderRadius: radius._10,
     backgroundColor: '#1E1E1E',
     justifyContent: 'center',
     alignItems: 'center',
@@ -455,7 +455,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     backgroundColor: colors.neutral800,
     padding: 4,
-    borderRadius: 12,
+    borderRadius: radius._12,
     borderWidth: 1,
     borderColor: '#1E1E1E',
   },
@@ -463,7 +463,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 12,
     alignItems: 'center',
-    borderRadius: 8,
+    borderRadius: radius._10,
   },
   typeBtnExpense: {
     backgroundColor: colors.rose,
@@ -480,7 +480,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.neutral800,
     paddingVertical: 12,
     alignItems: 'center',
-    borderRadius: 10,
+    borderRadius: radius._10,
     borderWidth: 2,
     borderColor: 'transparent',
   },
@@ -496,7 +496,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.neutral800,
     paddingHorizontal: 12,
     paddingVertical: 10,
-    borderRadius: 8,
+    borderRadius: radius._10,
     borderWidth: 1,
     borderColor: '#1E1E1E',
   },
@@ -507,7 +507,7 @@ const styles = StyleSheet.create({
   impactCard: {
     backgroundColor: 'rgba(14, 165, 233, 0.12)',
     padding: spacingX._15,
-    borderRadius: 12,
+    borderRadius: radius._12,
     borderWidth: 1,
     borderColor: 'rgba(14, 165, 233, 0.3)',
   },
